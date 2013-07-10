@@ -1,4 +1,4 @@
-CXX = c++ ${ADDOPT} -std=gnu++11 -Wall -Wno-format  -Wstrict-overflow -Wunsafe-loop-optimizations -ftree-vectorizer-verbose=1 -ftree-loop-if-convert-stores
+CXX = c++ ${ADDOPT} -std=gnu++11 -Wall -Wno-format  -Wstrict-overflow -Wunsafe-loop-optimizations -ftree-vectorizer-verbose=1 -ftree-loop-if-convert-stores -lrt
 
 
 
