@@ -398,6 +398,37 @@ public:
     return __rdtscp(&taux);
   }
 
+  
+  static bool isINTEL() {
+    char v[13] = { 0, };
+    unsigned int cpuid_level=0;
+    cpuid(0, &cpuid_level, (unsigned int *)&v[0], ( unsigned int *)&v[8], ( unsigned int *)&v[4]);
+    return 0==::strcmp(v,"GenuineIntel");
+  }
+  
+  static void cpuid(unsigned int op, unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx) {
+    unsigned int a = eax ? *eax : 0;
+    unsigned int b = ebx ? *ebx : 0;
+    unsigned int c = ecx ? *ecx : 0;
+    unsigned int d = edx ? *edx : 0;
+    
+#if defined __i386__
+    __asm__ __volatile__ ("xchgl	%%ebx,%0\n\t"
+			  "cpuid	\n\t"
+			  "xchgl	%%ebx,%0\n\t"
+			  : "+r" (b), "=a" (a), "=c" (c), "=d" (d)
+			  : "1" (op), "2" (c));
+#else
+    __asm__ __volatile__ ("cpuid"
+			  : "=a" (a), "=b" (b), "=c" (c), "=d" (d)
+			  : "0" (op), "2" (c));
+#endif
+    
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+  }
 
 };
 

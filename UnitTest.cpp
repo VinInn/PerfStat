@@ -13,7 +13,7 @@
 int main() {
   int ret = 0;
 
-  std::cout << "we are " << PerfStat::isIntel() ? "on" << "not on" << " an Intel Machine" << std::endl; 
+  std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an Intel Machine" << std::endl; 
 
 
 
