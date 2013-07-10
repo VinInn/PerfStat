@@ -174,6 +174,13 @@ public:
       int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds0, flags);
       if (fds==-1) std::cout << "error " << i << " " << errno << " " << strerror(errno) << std::endl;
     }
+
+    // a small hack
+    if (!isIntel()) {
+      confs2[4] = PERF_COUNT_HW_BUS_CYCLES;
+      types2[4] = PERF_TYPE_HARDWARE;
+    }
+    
     for  (int i=1; i!=METRIC_COUNT; ++i) {
       pe.config = confs2[i]; pe.type = types2[i];
       int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds1, flags);
@@ -321,7 +328,7 @@ public:
 	<< sep << "missed-br/cy"
 	<< sep << "cache-ref/cy"
 	<< sep << "mem-ref/cy"
-	<< sep << "div/cy"
+	<< sep <<  (isINTEL() ? "div/cy" : "bus/cy")
 	<< sep << "missed-L1I/cy"
       //	<< sep << "dtlb-walk/cy"
       //	<< sep << "itlb-walk/cy"
