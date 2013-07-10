@@ -176,7 +176,7 @@ public:
     }
 
     // a small hack
-    if (!isIntel()) {
+    if (!isINTEL()) {
       confs2[4] = PERF_COUNT_HW_BUS_CYCLES;
       types2[4] = PERF_TYPE_HARDWARE;
     }
