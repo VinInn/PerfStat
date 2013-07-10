@@ -2,7 +2,7 @@ CXX = c++ ${ADDOPT} -std=gnu++11 -Wall -Wno-format  -Wstrict-overflow -Wunsafe-l
 
 
 
-.PHONY : run all clean L3Mem
+.PHONY : run all clean L3Mem  UnitTest
 
 all : UnitTest L3Mem
 
