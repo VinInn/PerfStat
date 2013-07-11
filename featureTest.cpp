@@ -189,6 +189,8 @@ int main() {
 
      }
 
+    ret &= s!=0;
+
    std::cout << " " << s << std::endl;
 
 
@@ -203,22 +205,20 @@ int main() {
    double s =0;
     for (int k=0; k!=100; ++k) {
      perf.start();
-     for (int i=0; i<10000000; ++i) s+= std::sqrt(i+1.);
+     for (int i=1; i<10000001; ++i) s+= std::sqrt(i+1.);
      perf.stop();
 
      }
+
+    ret &= s!=0;
+
    std::cout << " " << s << std::endl;
 
-   std::cout << "|sqrt double raw  ";
-   perf.print(std::cout);
-      
-   std::cout << "double sqrt " << s << std::endl;
-
-   std::cout << "|sqrt double cal  ";
+   std::cout << "|sqrt d  ";
    perf.print(std::cout,true);
 }
    
 
 
-   return 0;
+ return ret ? 0 : -1;
 }
