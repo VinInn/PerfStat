@@ -7,7 +7,7 @@ struct A {
 
   A(int ii) : i(ii){}
   
-  ~A(){}
+  virtual ~A(){}
   
   int val() const;
   virtual int ival() const=0;
