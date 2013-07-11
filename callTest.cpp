@@ -11,7 +11,7 @@ struct A {
   
   int val() const;
   virtual int ival() const=0;
-  virtual int ijval() const=0;
+  virtual int jval() const=0;
 
   int i;
 
@@ -23,7 +23,7 @@ struct B : public A {
  B(int ii) : A(ii){}
 
   virtual int ival() const override { return i;}
-  virtual int ijval() const final { return i;}
+  virtual int jval() const final { return i;}
 
 };
 
@@ -31,7 +31,7 @@ struct C : public A {
   C(int ii) : A(ii){}
 
   virtual int ival() const override { return i;}
-  virtual int ijval() const final { return i;}
+  virtual int jval() const final { return i;}
 
 };
 
