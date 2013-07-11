@@ -4,7 +4,7 @@
 #include<malloc.h>
 
 struct A {
-
+  A(){}
   A(int ii) : i(ii){}
   
   virtual ~A(){}
@@ -21,6 +21,7 @@ struct A {
 int A::val() const { return i;}
 
 struct B : public A {
+  B(){}
  B(int ii) : A(ii){}
 
   virtual int ival() const override { return i;}
@@ -30,6 +31,7 @@ struct B : public A {
 };
 
 struct C : public A {
+  C(){}
   C(int ii) : A(ii){}
 
   virtual int ival() const override { return i;}
@@ -40,6 +42,7 @@ struct C : public A {
 
 void modify(A**){}
 void modify(C**){}
+void modify(C*){}
 
 
 int main(int argc, char** argv) {
@@ -52,15 +55,18 @@ int main(int argc, char** argv) {
   PerfStat c11, c12, c13;
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
+  PerfStat c41, c42, c43;
 
   constexpr int NN =1024*4;
   A * a[NN];
   A * b[NN];
   C * c[NN];
+  C  d[NN];
 
   for (int i=0; i!=NN; i++) {
     b[i] = new B(i);
     c[i] = new C(i);
+    d[i] = C(i);
   }
   
   for (int i=0; i!=NN; i+=2) {
@@ -83,10 +89,11 @@ int main(int argc, char** argv) {
     auto k = ok%100; 
     s[k]=0;
 
-    modify(a);modify(b); modify(c);
+    modify(a);modify(b); modify(c);modify(d);
     if (q2) {
       b[int(ww[ok%32])] = a[int(ww[ok%64])];
       a[int(ww[ok%32])] = c[int(ww[ok%64])];
+      d[int(ww[ok%32])] = *c[int(ww[ok%64])];
     }
 
     c11.start();
@@ -128,6 +135,20 @@ int main(int argc, char** argv) {
       s[k] += c[i]->jval();
     c33.stop();
 
+    c41.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += d[i].val();
+    c41.stop();
+    c42.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += d[i].ival();
+    c42.stop();
+    c43.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += d[i].jval();
+    c43.stop();
+
+
     if (k>0 && s[k] != s[k-1]) err=true;
     
   }
@@ -143,6 +164,9 @@ int main(int argc, char** argv) {
   std::cout << "|c  val  "; c31.print(std::cout);
   std::cout << "|c ival  "; c32.print(std::cout);
   std::cout << "|c jval  "; c33.print(std::cout);
+  std::cout << "|d  val  "; d31.print(std::cout);
+  std::cout << "|d ival  "; d32.print(std::cout);
+  std::cout << "|d jval  "; d33.print(std::cout);
 
   return err ? -1 : 0;
 
