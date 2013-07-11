@@ -12,6 +12,7 @@ struct A {
   int val() const;
   virtual int ival() const=0;
   virtual int jval() const=0;
+  virtual int kval() const=0;
 
   int i;
 
@@ -24,6 +25,7 @@ struct B : public A {
 
   virtual int ival() const override { return i;}
   virtual int jval() const final { return i;}
+  virtual int kval() const final { return i;}
 
 };
 
@@ -32,6 +34,7 @@ struct C : public A {
 
   virtual int ival() const override { return i;}
   virtual int jval() const final { return i;}
+  virtual int kval() const override { return i;}
 
 };
 
@@ -67,7 +70,7 @@ int main(int argc, char** argv) {
 
 
   if (q1) {
-    b[ww[3]] = a[ww[4]];
+    b[int(ww[3])] = a[int(ww[4])];
 
   }
 
@@ -82,8 +85,8 @@ int main(int argc, char** argv) {
 
     modify(a);modify(b); modify(c);
     if (q2) {
-      b[ww[ok%32]] = a[ww[ok%64]];
-      a[ww[ok%32]] = c[ww[ok%64]];
+      b[int(ww[ok%32])] = a[int(ww[ok%64])];
+      a[int(ww[ok%32])] = c[int(ww[ok%64])];
     }
 
     c11.start();
