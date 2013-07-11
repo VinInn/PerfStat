@@ -35,11 +35,15 @@ struct C : public A {
 
 };
 
+void modify(A**){}
+
+int main(int argc, char** argv) {
+
+  bool q1 = argc>2;
+  bool q2 = argc>4;
+  char * ww = argv[3];
 
 
-int main(int argc, char**) {
-
- 
   PerfStat c11, c12, c13;
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
@@ -59,6 +63,12 @@ int main(int argc, char**) {
     a[i+1]= new C(i);
   }
 
+
+  if (q1) {
+    b[ww[3]] = a[ww[4]];
+
+  }
+
   constexpr int KK=100000;
 
 
@@ -67,6 +77,12 @@ int main(int argc, char**) {
   for (int ok=0; ok!=KK; ++ok) {
     auto k = ok%100; 
     s[k]=0;
+
+    modify(a);modify(b); modify(c);
+    if (q2) {
+      b[ww[ok%32]] = a[ww[ok%64]];
+      a[ww[ok%32]] = c[ww[ok%64]];
+    }
 
     c11.start();
     for (int i=0;i!=NN;++i)
