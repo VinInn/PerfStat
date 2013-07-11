@@ -1,7 +1,7 @@
 #include <random>
 #include <iostream>
 #include "PerfStat.h"
-#inlucde<malloc.h>
+#include<malloc.h>
 
 
 int main(int argc, char**) {
@@ -13,7 +13,7 @@ int main(int argc, char**) {
   constexpr int NN = 1024*1024;
 
   // alignas(128) float r[NN];
-  float * r = (float*)__builtin_assume_aligned(memalign(32,NN*sizeof(float)),32);
+  float * r = (float*)__builtin_assume_aligned(::memalign(32,NN*sizeof(float)),32);
 
 
   std::cout << sizeof(r) << " " << alignof(r) << std::endl;
@@ -68,6 +68,7 @@ int main(int argc, char**) {
   
   c2.print(std::cout);
 
+  ::free(r);
 
   return 0;
 
