@@ -46,7 +46,7 @@ int main(int argc, char**) {
 
   constexpr int NN =1024*4;
   A * a[NN];
-  B * b[NN];
+  A * b[NN];
   C * c[NN];
 
   for (int i=0; i!=NN; i++) {
