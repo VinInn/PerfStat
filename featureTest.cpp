@@ -4,10 +4,12 @@
 
 template<typename T>
 // typedef float T;
-inline T poly(T y) {
-#if HORNER  // HORNER 
-  T p =  T(0x2.p0) + y * (T(0x2.p0) + y * (T(0x1.p0) + y * (T(0x5.55523p-4) + y * (T(0x1.5554dcp-4) + y * (T(0x4.48f41p-8) + y * T(0xb.6ad4p-12)))))) ;
-#else // ESTRIN does seem to save a cycle or two
+inline T polyHorner(T y) {
+  return  T(0x2.p0) + y * (T(0x2.p0) + y * (T(0x1.p0) + y * (T(0x5.55523p-4) + y * (T(0x1.5554dcp-4) + y * (T(0x4.48f41p-8) + y * T(0xb.6ad4p-12)))))) ;
+}
+
+template<typename T>
+inline T polyEstrin(T y) {
   T p56 = T(0x4.48f41p-8) + y * T(0xb.6ad4p-12);
   T p34 = T(0x5.55523p-4) + y * T(0x1.5554dcp-4);
   T y2 = y*y;
@@ -15,181 +17,147 @@ inline T poly(T y) {
   T p36 = p34 + y2*p56;
   T p16 = p12 + y2*p36;
   T p =  T(0x2.p0) + y*p16;
-#endif
   return p;
 }
 
 
 int main() {
 
-{
-  PerfStat perf;
-  PerfStat::header(std::cout);
-
-   double s =0;
+  bool ret=true;
+  {
+    
+    
+    PerfStat perf;
+    std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
+    PerfStat::header(std::cout);
+    
+    double s =0;
     for (int k=0; k!=100; ++k) {
-     perf.start();    
+      perf.start();    
+      
+      for (int i=1; i!=1000001; ++i) s+= std::log(i+1);
+      
+      perf.stop();
+      
+    } 
+    ret &= s!=0;
+    
+    std::cout << "|log  ";
+    perf.print(std::cout);
 
-     for (int i=0; i!=1000000; ++i) s+= std::log(i+1);
+  }
 
-     perf.stop();
-
-     } 
-   std::cout << "log " << s << std::endl;
-
-   std::cout << "|log  ";
-   perf.print(std::cout,true);
-
-}
-
-{
-  PerfStat perf;
-  PerfStat::header(std::cout);
-
-   double s =0;
+  {
+    PerfStat perf;
+    
+    
+    double s =0;
     for (int k=0; k!=100; ++k) {
-     perf.start();
+      perf.start();
+      
+      for (int i=1; i!=1000001; ++i) s+= std::log2(i+1);
+      
+      perf.stop();
+      
+    }
+    
+    ret &= s!=0;
+    
+    std::cout << "|log2  ";
+    perf.print(std::cout);
+    
+  }
+  
 
-     for (int i=0; i!=1000000; ++i) s+= std::log2(i+1);
-
-     perf.stop();
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
+    for (int k=0; k!=100; ++k) {
+      perf.start();
+      float c = 1.f/1000000.f;
+      for (int i=1; i<10000001; ++i) s+= polyHorner((float(i)+1.f)*c);
+      
+      perf.stop();
 
      }
-   std::cout << "log2 " << s << std::endl;
+    ret &= s!=0;
 
-   std::cout << "|log2  ";
-   perf.print(std::cout,true);
-
-}
-
-{
-  PerfStat perf;
-  PerfStat::header(std::cout);
-
-   double s =0;
-    for (int k=0; k!=100; ++k) {
-     perf.startAll();
-
-     for (int i=0; i!=1000000; ++i) s+= std::log2(i+1);
-
-     perf.stopAll();
-
-     }
-   std::cout << "log2 all " << s << std::endl;
-
-   std::cout << "|log all  ";
-   perf.print(std::cout,true);
-                                                                                     
-}
-
-
-
-
-{
-  PerfStat perf;
-   // will vectorize 256 only with avx2 (because of the int)
-   float s =0;
-    for (int k=0; k!=100; ++k) {
-     perf.start();
-     float c = 1.f/1000000.f;
-     for (int i=0; i<10000000; ++i) s+= poly((float(i)+1.f)*c);
-
-     perf.stop();
-
-     }
-   std::cout << s << std::endl;
-
-   std::cout << "|poly f  ";
+   std::cout << "|Horner f  ";
    perf.print(std::cout,true);
 }
 
-
-{
-  PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
-   double s =0;
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
     for (int k=0; k!=100; ++k) {
-     perf.start();
-     double c = 1./1000000.;
-     for (int i=0; i<10000000; ++i) s+= poly((i+1)*c);
-     perf.stop();                                                  
+      perf.start();
+      float c = 1.f/1000000.f;
+      for (int i=1; i<10000001; ++i) s+= polyEstrin((float(i)+1.f)*c);
+      
+      perf.stop();
+      
+    }
+    ret &= s!=0;
+    
+    std::cout << "|Estrin f  ";
+    perf.print(std::cout,true);
+  }
 
-     }
-   std::cout << "poly double " << s << std::endl;
 
-   std::cout << "|poly double  ";
-   perf.print(std::cout,true);
-}
-
-
-{
-  PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
-   double s =0;
+  {
+    PerfStat perf;
+    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    double s =0;
     for (int k=0; k!=100; ++k) {
-     perf.start();
-     double c = 1./1000000.;
-     for (int i=0; i<10000000; ++i) s+= poly((i+1)*c);
-     perf.stop();
+      perf.start();
+      double c = 1./1000000.;
+      for (int i=1; i<10000001; ++i) s+= polyHorner((i+1)*c);
+      perf.stop();                                                  
+      
+    }
+    ret &= s!=0;
+    
+    std::cout << "|Horner d  ";
+    perf.print(std::cout,true);
+  }
 
-     }
-   std::cout << "poly double " << s << std::endl;
 
-   std::cout << "|poly double  ";
-   perf.print(std::cout,true);
-}
-
-{
-  PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
-   double s =0;
+  {
+    PerfStat perf;
+    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    double s =0;
     for (int k=0; k!=100; ++k) {
-     perf.start0();
-     double c = 1./1000000.;
-     for (int i=0; i<10000000; ++i) s+= poly((i+1)*c);
-     perf.stop();
-   
-     }
-   std::cout << "poly double " << s << std::endl;
+      perf.start();
+      double c = 1./1000000.;
+      for (int i=1; i<10000001; ++i) s+= polyEstrin((i+1)*c);
+      perf.stop();
+      
+    }
+    ret &= s!=0;
 
-     
-   std::cout << "|poly double 0  ";
-   perf.print(std::cout,true);
-}
+    
+    std::cout << "|Estrin d  ";
+    perf.print(std::cout,true);
+  }
+  
 
-{
-  PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
-   double s =0;
+
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
     for (int k=0; k!=100; ++k) {
-     perf.startAll();
-     double c = 1./1000000.;
-     for (int i=0; i<10000000; ++i) s+= poly((i+1)*c);
-     perf.stopAll();
-   
-     }
-   std::cout << "poly double " << s << std::endl;
+      perf.start();
+      for (int i=1; i<10000001; ++i) s+= 1.f/(float(i)+1.f);
 
-   std::cout << "|poly double all  ";
-   perf.print(std::cout,true);
-}
- 
-
-
-{
-  PerfStat perf;
-   // will vectorize 256 only with avx2 (because of the int)
-   float s =0;
-    for (int k=0; k!=100; ++k) {
-     perf.start();
-     for (int i=0; i<10000000; ++i) s+= 1.f/(float(i)+1.f);
-
-     perf.stop();
-
-     }
-   std::cout << "float inv " << s << std::endl;
-
-   std::cout << "|inv float  ";
+      perf.stop();
+      
+    }
+    ret &= s!=0;
+    
+   std::cout << "|inv f  ";
    perf.print(std::cout,true);
 }
 
@@ -200,13 +168,12 @@ int main() {
    double s =0;
     for (int k=0; k!=100; ++k) {
      perf.start();
-     for (int i=0; i<10000000; ++i) s+= 1./(i+1.);
+     for (int i=1; i<10000001; ++i) s+= 1./(i+1.);
      perf.stop();
 
      }
-   std::cout << "double inv " << s << std::endl;
 
-   std::cout << "|inv double  ";
+   std::cout << "|inv d  ";
    perf.print(std::cout,true);
 }
 

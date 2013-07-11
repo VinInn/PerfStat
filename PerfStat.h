@@ -295,14 +295,11 @@ public:
     bool ret=true;
     if (ncalls0>0) {
       ret &= ok(results0[1],results0[METRIC_OFFSET+METRIC_COUNT+1]);
-      ret &= ok(results0[2],results0[METRIC_OFFSET+3]);
-
     }
     if (ncalls1>1) {
       ret &= ok(results1[1],results1[METRIC_OFFSET+METRIC_COUNT+1]);
-      ret &= ok(results1[2],results1[METRIC_OFFSET+3]);
     }
-
+    ret &= ok(results0[2]+results1[2],results0[METRIC_OFFSET+3]);
     return ret;
   }
 
@@ -378,7 +375,7 @@ public:
 	<< sep << std::endl;
   }
 
-  void print(std::ostream & out, bool docalib=false, bool debug=true) {
+  void print(std::ostream & out, bool docalib=true, bool debug=false {
     if (-1==read()) out << "error in reading" << std::endl;
     if (docalib) calib();  
 
