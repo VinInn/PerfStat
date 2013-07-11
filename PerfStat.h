@@ -375,7 +375,7 @@ public:
 	<< sep << std::endl;
   }
 
-  void print(std::ostream & out, bool docalib=true, bool debug=false {
+  void print(std::ostream & out, bool docalib=true, bool debug=false) {
     if (-1==read()) out << "error in reading" << std::endl;
     if (docalib) calib();  
 
