@@ -203,22 +203,22 @@ int main() {
   PerfStat perf;
    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
    double s =0;
-    for (int k=0; k!=100; ++k) {
+   for (int k=0; k!=100; ++k) {
      perf.start();
      for (int i=1; i<10000001; ++i) s+= std::sqrt(i+1.);
      perf.stop();
-
-     }
-
-    ret &= s!=0;
-
+     
+   }
+   
+   ret &= s!=0;
+   
    std::cout << " " << s << std::endl;
-
+   
    std::cout << "|sqrt d  ";
    perf.print(std::cout,true);
-}
-   
-
-
+ }
+ 
+ 
+ 
  return ret ? 0 : -1;
 }
