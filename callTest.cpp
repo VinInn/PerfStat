@@ -44,69 +44,70 @@ int main(int argc, char**) {
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
 
-  constexpr int NN =1024;
+  constexpr int NN =1024*4;
   A * a[NN];
   B * b[NN];
   C * c[NN];
 
-  for (int i=0; i!=1024; i++) {
+  for (int i=0; i!=NN; i++) {
     b[i] = new B(i);
     c[i] = new C(i);
   }
   
-  for (int i=0; i!=1024; i+=2) {
+  for (int i=0; i!=NN; i+=2) {
     a[i]= new B(i);
     a[i+1]= new C(i);
   }
 
-  constexpr int KK=10000;
+  constexpr int KK=100000;
 
 
   bool err=false;
-  int s[KK+3];
-  for (int ok=0; ok!=KK+3; ++ok) {
-    s[ok]=0;
+  int s[100];
+  for (int ok=0; ok!=KK; ++ok) {
+    auto k = ok%100; 
+    s[k]=0;
 
     c11.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i]->val();
+      s[k] += a[i]->val();
     c11.stop();
     c12.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i]->ival();
+      s[k] += a[i]->ival();
     c12.stop();
     c13.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i]->jval();
+      s[k] += a[i]->jval();
     c13.stop();
 
     c21.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i]->val();
+      s[k] += b[i]->val();
     c21.stop();
     c22.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i]->ival();
+      s[k] += b[i]->ival();
     c22.stop();
     c23.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i]->jval();
+      s[k] += b[i]->jval();
     c23.stop();
 
     c31.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i]->val();
+      s[k] += c[i]->val();
     c31.stop();
     c32.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i]->ival();
+      s[k] += c[i]->ival();
     c32.stop();
     c33.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i]->jval();
+      s[k] += c[i]->jval();
     c33.stop();
 
-    if (ok>0 && s[ok] != s[ok-1]) err=true;
+    if (k>0 && s[k] != s[k-1]) err=true;
     
   }
 
