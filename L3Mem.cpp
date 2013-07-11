@@ -45,7 +45,6 @@ int main(int argc, char**) {
 
   constexpr int KK=10000;
 
-  t1=0; ts=0;
 
   bool err=false;
   float s[KK+3];
