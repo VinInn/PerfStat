@@ -41,6 +41,8 @@ int main() {
       
     } 
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
     
     std::cout << "|log  ";
     perf.print(std::cout);
@@ -62,6 +64,8 @@ int main() {
     }
     
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
     
     std::cout << "|log2  ";
     perf.print(std::cout);
@@ -83,6 +87,8 @@ int main() {
      }
     ret &= s!=0;
 
+   std::cout << " " << s << std::endl;
+
    std::cout << "|Horner f  ";
    perf.print(std::cout,true);
 }
@@ -100,6 +106,9 @@ int main() {
       
     }
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
+
     
     std::cout << "|Estrin f  ";
     perf.print(std::cout,true);
@@ -118,6 +127,9 @@ int main() {
       
     }
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
+
     
     std::cout << "|Horner d  ";
     perf.print(std::cout,true);
@@ -136,6 +148,8 @@ int main() {
       
     }
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
 
     
     std::cout << "|Estrin d  ";
@@ -156,6 +170,8 @@ int main() {
       
     }
     ret &= s!=0;
+
+   std::cout << " " << s << std::endl;
     
    std::cout << "|inv f  ";
    perf.print(std::cout,true);
@@ -173,6 +189,9 @@ int main() {
 
      }
 
+   std::cout << " " << s << std::endl;
+
+
    std::cout << "|inv d  ";
    perf.print(std::cout,true);
 }
@@ -188,7 +207,7 @@ int main() {
      perf.stop();
 
      }
-   std::cout << "double sqrt raw " << s << std::endl;
+   std::cout << " " << s << std::endl;
 
    std::cout << "|sqrt double raw  ";
    perf.print(std::cout);
