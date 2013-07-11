@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 #include <asm/unistd.h>
 #include <x86intrin.h>
+#include<cmath>
 
 #ifdef __MACH__
 #include <mach/clock.h>
@@ -64,6 +65,7 @@ private:
     // 0x0408,   // DTLB walk                                                       
     //  0x0485  // ITLB walk
     0x0280 // ICACHE.MISSES
+    // 0x02C2 // RETIRE_SLOTS
   };
 
   Conf confs2[METRIC_COUNT]= {
@@ -99,22 +101,24 @@ public:
   double nomClock() const { return double(times[0])/double(times[1]); }
   double clock() const { return double(cyclesRaw())/double(taskTimeRaw()); }
 
-  double corr0() const { return double(calls())*double(results0[1])/(double(results0[2])*double(callsTot()));}
-  double corr1() const { return double(calls())*double(results1[1])/(double(results1[2])*double(callsTot()));}
+  double corr0() const { return ( (0==ncalls0) | (0==results0[2]) ) ? 0 : double(calls())*double(results0[1])/(double(results0[2])*double(callsTot()));}
+  double corr1() const { return ( (0==ncalls1) | (0==results1[2]) ) ? 0 : double(calls())*double(results1[1])/(double(results1[2])*double(callsTot()));}
 
   long long cyclesRaw() const { return results0[METRIC_OFFSET+0]+results1[METRIC_OFFSET+0];}
   long long instructionsRaw() const { return results0[METRIC_OFFSET+1]+results1[METRIC_OFFSET+1];}
   long long taskTimeRaw() const { return results0[METRIC_OFFSET+3]+results1[METRIC_OFFSET+3];}
+  long long realTimeRaw() const { return results0[METRIC_OFFSET+METRIC_COUNT+1];}
+
 
   double cyclesTot() const { return corr0()*results0[METRIC_OFFSET+0]+corr1()*results1[METRIC_OFFSET+0];}
   double instructionsTot() const { return corr0()*results0[METRIC_OFFSET+1]+corr1()*results1[METRIC_OFFSET+1];}
   double taskTimeTot() const { return corr0()*results0[METRIC_OFFSET+3]+corr1()*results1[METRIC_OFFSET+3];}
 
 
-  double cycles() const { return cyclesTot()/double(ncalls); }
-  double instructions() const { return instructionsTot()/double(ncalls); }
-  double taskTime() const { return taskTimeTot()/double(ncalls); }
-  double realTime() const { return double(results0[METRIC_OFFSET+METRIC_COUNT+1])/double(ncalls); }
+  double cycles() const { return (0==ncalls) ? 0 : cyclesTot()/double(ncalls); }
+  double instructions() const { return (0==ncalls) ? 0 : instructionsTot()/double(ncalls); }
+  double taskTime() const { return (0==ncalls) ? 0 : taskTimeTot()/double(ncalls); }
+  double realTime() const { return (0==ncalls) ? 0 : double(results0[METRIC_OFFSET+METRIC_COUNT+1])/double(ncalls); }
 
   // instructions per cycle
   double ipc() const { return double(instructionsRaw())/double(cyclesRaw());}
@@ -172,7 +176,7 @@ public:
     for	(int i=1; i!=METRIC_COUNT; ++i) {
       pe.config = confs1[i]; pe.type = types1[i];
       int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds0, flags);
-      if (fds==-1) std::cout << "error " << i << " " << errno << " " << strerror(errno) << std::endl;
+      if (fds==-1) std::cout << "error 0:" << i << " " << errno << " " << strerror(errno) << std::endl;
     }
 
     // a small hack
@@ -184,7 +188,7 @@ public:
     for  (int i=1; i!=METRIC_COUNT; ++i) {
       pe.config = confs2[i]; pe.type = types2[i];
       int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds1, flags);
-      if (fds==-1) std::cout << "error " << i+4 << " " << errno << " " << strerror(errno) << std::endl;
+      if (fds==-1) std::cout << "error 1:" << i << " " << errno << " " << strerror(errno) << std::endl;
     }
     
     ioctl(fds0, PERF_EVENT_IOC_RESET, 0);
@@ -277,6 +281,31 @@ public:
   }
   
 
+  int read() {
+    auto ret = ::read(fds0, results0, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
+    results0[METRIC_OFFSET+METRIC_COUNT]=times[0];results0[METRIC_OFFSET+METRIC_COUNT+1]=times[1];
+    ret = std::min(ret,::read(fds1, results1, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+    return ret;
+  }
+
+
+  bool verify(double res) {
+    read();calib();
+    auto ok = [=](double x, double y) { return std::abs((x-y)/y)<res;};
+    bool ret=true;
+    if (ncalls0>0) {
+      ret &= ok(results0[1],results0[METRIC_OFFSET+METRIC_COUNT+1]);
+      ret &= ok(results0[2],results0[METRIC_OFFSET+3]);
+
+    }
+    if (ncalls1>1) {
+      ret &= ok(results1[1],results1[METRIC_OFFSET+METRIC_COUNT+1]);
+      ret &= ok(results1[2],results1[METRIC_OFFSET+3]);
+    }
+
+    return ret;
+  }
+
   void warmup() {
    if(active) return;
     for (int i=0; i!=20; ++i) {start();stop();}
@@ -300,22 +329,17 @@ public:
     err = std::min(err,::read(fds1, results1c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
     results0c[METRIC_OFFSET+METRIC_COUNT]=times[0];results0c[METRIC_OFFSET+METRIC_COUNT+1]=times[1];
     if (err==-1) return;
-    for (int i=METRIC_OFFSET; i!=METRIC_OFFSET+METRIC_COUNT+2; ++i) {
+    for (int i=1; i!=METRIC_OFFSET+METRIC_COUNT+2; ++i) {
       results0c[i]-=results0[i];
       results1c[i]-=results1[i];
-      bias0[i] +=results0c[i];
-      bias1[i] +=results1c[i];
       results0[i] -= ncalls0*results0c[i]/10 + bias0[i];
       results1[i] -= ncalls1*results1c[i]/10 + bias1[i];
+      // update bias for next read...
+      bias0[i] +=results0c[i];
+      bias1[i] +=results1c[i];
     }
   }
   
-  int read() {
-    auto ret = ::read(fds0, results0, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
-    results0[METRIC_OFFSET+METRIC_COUNT]=times[0];results0[METRIC_OFFSET+METRIC_COUNT+1]=times[1];
-    ret = std::min(ret,::read(fds1, results1, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
-    return ret;
-  }
 
 
  static void header(std::ostream & out) {
@@ -368,13 +392,13 @@ public:
 	<< " "<<  double(taskTimeRaw())/double(results0[METRIC_OFFSET+METRIC_COUNT+1]) << std::endl;
     out << ncalls0 << " ";
     for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i)  out << results0[i] << " ";
-    out << double(results0[METRIC_OFFSET+0])/double(results0[METRIC_OFFSET+3]) 
+    out << "; " <<  double(results0[METRIC_OFFSET+0])/double(results0[METRIC_OFFSET+3]) 
 	<< " " << double(results0[METRIC_OFFSET+1])/double(results0[METRIC_OFFSET+0])
 	<< " " << double(results0[2])/double(results0[1]);
     out  << std::endl;
     out << ncalls1 << " ";
     for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET; ++i)  out << results1[i] << " ";
-    out << double(results1[METRIC_OFFSET+0])/double(results1[METRIC_OFFSET+3]) 
+    out  << "; "<< double(results1[METRIC_OFFSET+0])/double(results1[METRIC_OFFSET+3]) 
 	<< " " << double(results1[METRIC_OFFSET+1])/double(results1[METRIC_OFFSET+0])
 	<< " " << double(results1[2])/double(results1[1]);
 
