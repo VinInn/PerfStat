@@ -36,6 +36,8 @@ struct C : public A {
 };
 
 void modify(A**){}
+void modify(C**){}
+
 
 int main(int argc, char** argv) {
 
