@@ -69,41 +69,41 @@ int main(int argc, char**) {
 
     c11.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i].val();
+      s[ok] += a[i]->val();
     c11.stop();
     c12.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i].ival();
+      s[ok] += a[i]->ival();
     c12.stop();
     c13.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += a[i].jval();
+      s[ok] += a[i]->jval();
     c13.stop();
 
     c21.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i].val();
+      s[ok] += b[i]->val();
     c21.stop();
     c22.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i].ival();
+      s[ok] += b[i]->ival();
     c22.stop();
     c23.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += b[i].jval();
+      s[ok] += b[i]->jval();
     c23.stop();
 
     c31.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i].val();
+      s[ok] += c[i]->val();
     c31.stop();
     c32.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i].ival();
+      s[ok] += c[i]->ival();
     c32.stop();
     c33.start();
     for (int i=0;i!=NN;++i)
-      s[ok] += c[i].jval();
+      s[ok] += c[i]->jval();
     c33.stop();
 
     if (ok>0 && s[ok] != s[ok-1]) err=true;
