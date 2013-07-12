@@ -111,6 +111,36 @@ int main() {
 
   }
 
+  {
+    // sharing
+    PerfStat perf1;
+    PerfStat perf2(perf1.fd());
+    double s1 =0;
+    double s2 =0;
+    for (int k=0; k!=100; ++k) {
+      perf1.startDelta();    
+      for (int i=1; i!=1000001; ++i) s1+= std::log(i+1);
+      perf1.stopDelta();
+      perf2.startDelta();    
+      for (int i=1; i!=1000001; ++i) s2+= std::log2(i+1);
+      perf2.stopDelta();
+      
+    }
+    ret &= (s1!=0);ret &= (s2!=0);
+    test_verify(100==perf1.calls());
+    test_verify(100==perf1.callsTot());
+    test_verify(100==perf2.calls());
+    test_verify(100==perf2.callsTot());
+    perf1.calib();
+    perf2.calib();
+    // test_verify(perf.verify(0.01));
+    perf1.summary(std::cout); //std::cout << std::endl;
+    perf2.summary(std::cout);// std::cout << std::endl;
+
+
+  }
+
+
 
   // ps.print(std::cout);
 
