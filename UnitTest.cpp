@@ -113,8 +113,9 @@ int main() {
 
   {
     // sharing
-    PerfStat perf1;
-    PerfStat perf2(perf1.fd());
+    PerfStat perf;
+    PerfStat perf1(perf.fd());
+    PerfStat perf2(perf.fd());
     double s1 =0;
     double s2 =0;
     for (int k=0; k!=100; ++k) {
@@ -131,8 +132,8 @@ int main() {
     test_verify(100==perf1.callsTot());
     test_verify(100==perf2.calls());
     test_verify(100==perf2.callsTot());
-    perf1.calib();
-    perf2.calib();
+//    perf1.calib();
+//    perf2.calib();
     // test_verify(perf.verify(0.01));
     perf1.summary(std::cout); //std::cout << std::endl;
     perf2.summary(std::cout);// std::cout << std::endl;

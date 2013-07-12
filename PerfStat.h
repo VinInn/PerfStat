@@ -153,9 +153,9 @@ public:
 
   // share file descriptors...
 
-  struct FD { int f0; int f1};
-  FD fd() const { FD f{fd0,fd1}; return f;}
-  PerfStat(Fd f) : fd0(f.f0), fd1(f.f1) {
+  struct FD { int f0; int f1;};
+  FD fd() const { FD f{fds0,fds1}; return f;}
+  PerfStat(FD f) : fds0(f.f0), fds1(f.f1) {
     ncalls=ncalls0=ncalls1=0;
     times[0]=times[1]=0;
     for	(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) results0[i]=results1[i]=bias0[i]=bias1[i]=0;
