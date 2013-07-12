@@ -2,6 +2,7 @@
 #include <iostream>
 #include "PerfStat.h"
 #include<malloc.h>
+#include<sstream>
 
 struct A {
   A(){}
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
   PerfStat c41, c42, c43;
+  PerfStat mn, md, ss1, ss2;
 
   constexpr int NN =1024*4;
   A * a[NN];
@@ -63,16 +65,22 @@ int main(int argc, char** argv) {
   C * c[NN];
   C  d[NN];
 
+  PerfStat m1; m1.startAll();
   for (int i=0; i!=NN; i++) {
     b[i] = new B(i);
     c[i] = new C(i);
     d[i] = C(i);
   }
-  
+  m1.stopAll();
+  std::cout <<"|new  "; m1.print(std::cout);  
+
+   m1.startAll(); 
   for (int i=0; i!=NN; i+=2) {
     a[i]= new B(i);
     a[i+1]= new C(i);
   }
+  m1.stopAll();
+  std::cout <<"|new  ";	m1.print(std::cout);
 
 
   if (q1) {
@@ -88,6 +96,40 @@ int main(int argc, char** argv) {
   for (int ok=0; ok!=KK; ++ok) {
     auto k = ok%100; 
     s[k]=0;
+
+  md.start();
+  for (int i=0; i!=NN; i+=2) {
+    delete a[i];
+    delete a[i+1];
+  }
+  md.stop();
+
+  mn.start();
+  for (int i=0; i!=NN; i+=2) {
+    a[i]= new B(i);
+    a[i+1]= new C(i);
+  }
+  mn.stop();
+ 
+  ss1.start();
+  std::string st1,st2;
+  bool sb=true;
+  for (int i=0; i!=NN; i+=2) {
+   char q = 50 - ok%10 + i%20;
+   st1 += q;
+   st2 += q;
+   sb &= st1==st2;
+  }
+  if (sb) s[k]+=st1.size();
+  ss1.stop();
+  ss2.start();
+  std::stringstream sss;
+  for (int i=0; i!=NN; i+=2) {
+    sss << i;
+  }
+  if (sss.str()==st1) s[k]+=st1.size();
+  ss2.stop();  
+ 
 
     modify(a);modify(b); modify(c);modify(d);
     if (q2) {
@@ -154,7 +196,11 @@ int main(int argc, char** argv) {
   }
 
   if (err) std::cout << "a mess " << std::endl;
-  PerfStat::header(std::cout);	
+  std::cout << "|kernel  "; PerfStat::header(std::cout);	
+  std::cout << "|new     "; mn.print(std::cout);
+  std::cout << "|delete  "; md.print(std::cout);
+  std::cout << "|string  "; ss1.print(std::cout);
+  std::cout << "|stream  "; ss2.print(std::cout);
   std::cout << "|a  val  "; c11.print(std::cout);
   std::cout << "|a ival  "; c12.print(std::cout);
   std::cout << "|a jval  "; c13.print(std::cout);
@@ -164,9 +210,9 @@ int main(int argc, char** argv) {
   std::cout << "|c  val  "; c31.print(std::cout);
   std::cout << "|c ival  "; c32.print(std::cout);
   std::cout << "|c jval  "; c33.print(std::cout);
-  std::cout << "|d  val  "; d31.print(std::cout);
-  std::cout << "|d ival  "; d32.print(std::cout);
-  std::cout << "|d jval  "; d33.print(std::cout);
+  std::cout << "|d  val  "; c41.print(std::cout);
+  std::cout << "|d ival  "; c42.print(std::cout);
+  std::cout << "|d jval  "; c43.print(std::cout);
 
   return err ? -1 : 0;
 
