@@ -48,6 +48,7 @@ void modify(C*){}
 
 int main(int argc, char** argv) {
 
+  bool nostring = argc>1;
   bool q1 = argc>2;
   bool q2 = argc>4;
   char * ww = argv[3];
@@ -97,39 +98,40 @@ int main(int argc, char** argv) {
     auto k = ok%100; 
     s[k]=0;
 
-  md.start();
-  for (int i=0; i!=NN; i+=2) {
-    delete a[i];
-    delete a[i+1];
+  if (!nostring) {
+    md.start();
+    for (int i=0; i!=NN; i+=2) {
+      delete a[i];
+      delete a[i+1];
+    }
+    md.stop();
+    
+    mn.start();
+    for (int i=0; i!=NN; i+=2) {
+      a[i]= new B(i);
+      a[i+1]= new C(i);
+    }
+    mn.stop();
+  
+    ss1.start();
+    std::string st1,st2;
+    bool sb=true;
+    for (int i=0; i!=NN; i+=2) {
+      char q = 50 - ok%10 + i%20;
+      st1 += q;
+      st2 += q;
+      sb &= st1==st2;
+    }
+    if (sb) s[k]+=st1.size();
+    ss1.stop();
+    ss2.start();
+    std::stringstream sss;
+    for (int i=0; i!=NN; i+=2) {
+      sss << i;
+    }
+    if (sss.str()==st1) s[k]+=st1.size();
+    ss2.stop();  
   }
-  md.stop();
-
-  mn.start();
-  for (int i=0; i!=NN; i+=2) {
-    a[i]= new B(i);
-    a[i+1]= new C(i);
-  }
-  mn.stop();
- 
-  ss1.start();
-  std::string st1,st2;
-  bool sb=true;
-  for (int i=0; i!=NN; i+=2) {
-   char q = 50 - ok%10 + i%20;
-   st1 += q;
-   st2 += q;
-   sb &= st1==st2;
-  }
-  if (sb) s[k]+=st1.size();
-  ss1.stop();
-  ss2.start();
-  std::stringstream sss;
-  for (int i=0; i!=NN; i+=2) {
-    sss << i;
-  }
-  if (sss.str()==st1) s[k]+=st1.size();
-  ss2.stop();  
- 
 
     modify(a);modify(b); modify(c);modify(d);
     if (q2) {

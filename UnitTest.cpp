@@ -47,9 +47,7 @@ int main() {
     double s =0;
     for (int k=0; k!=100; ++k) {
       perf.start();    
-      
       for (int i=1; i!=1000001; ++i) s+= std::log(i+1);
-      
       perf.stop();
       
     }
@@ -58,7 +56,7 @@ int main() {
     test_verify(100==perf.callsTot());
     perf.read(); perf.calib();
     // test_verify(perf.verify(0.01));
-    perf.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|    "; perf.summary(std::cout); //std::cout << std::endl;
     // perf.print(std::cout);
     // perf.print(std::cout,true);
   
@@ -66,9 +64,7 @@ int main() {
     s =0;
     for (int k=0; k!=100; ++k) {
       perf1.startAll();    
-      
       for (int i=1; i!=1000001; ++i) s+= std::log(i+1);
-      
       perf1.stopAll();
       
     }
@@ -77,7 +73,7 @@ int main() {
     test_verify(200==perf1.callsTot());
     perf1.read(); perf1.calib();
     // test_verify(perf.verify(0.01));
-    perf1.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|all    "; perf1.summary(std::cout); //std::cout << std::endl;
     // perf.print(std::cout);
     // perf.print(std::cout,true);
     
@@ -105,11 +101,39 @@ int main() {
     perf1.read(); perf1.calib();
     perf2.read(); perf2.calib();
     // test_verify(perf.verify(0.01));
-    perf1.summary(std::cout); //std::cout << std::endl;
-    perf2.summary(std::cout);// std::cout << std::endl;
+    std::cout <<"|one    ";perf1.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|two    ";perf2.summary(std::cout);// std::cout << std::endl;
 
 
   }
+  {
+
+    PerfStat perf1;
+    double s1 =0;
+    double s2 =0;
+    for (int k=0; k!=100; ++k) {
+      perf1.start();    
+      for (int i=1; i!=1000001; ++i) s1+= std::log(i+1);
+      perf1.stop();
+    }
+    perf1.read(); perf1.calib();
+    std::cout <<"|      ";perf1.summary(std::cout); //std::cout << std::endl;
+    perf1.reset();
+    for (int k=0; k!=100; ++k) {
+      perf1.start();    
+      for (int i=1; i!=1000001; ++i) s2+= std::log2(i+1);
+      perf1.stop();
+    }
+    test_verify(100==perf1.calls());
+    test_verify(100==perf1.callsTot());
+    ret &= (s1!=0);ret &= (s2!=0);
+    perf1.read(); perf1.calib();
+    // test_verify(perf.verify(0.01));
+    std::cout <<"|reset ";perf1.summary(std::cout);// std::cout << std::endl;
+
+
+  }
+
 
   {
     // sharing
@@ -125,9 +149,11 @@ int main() {
       perf2.startDelta();    
       for (int i=1; i!=1000001; ++i) s2+= std::log2(i+1);
       perf2.stopDelta();
-      
+      perf.start();perf.stop();  
     }
     ret &= (s1!=0);ret &= (s2!=0);
+    test_verify(100==perf.calls());
+    test_verify(100==perf.callsTot());
     test_verify(100==perf1.calls());
     test_verify(100==perf1.callsTot());
     test_verify(100==perf2.calls());
@@ -135,9 +161,10 @@ int main() {
 //    perf1.calib();
 //    perf2.calib();
     // test_verify(perf.verify(0.01));
-    perf1.summary(std::cout); //std::cout << std::endl;
-    perf2.summary(std::cout);// std::cout << std::endl;
-
+    perf.read(); perf.calib();
+    std::cout <<"|total  "; perf.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|one sh ";perf1.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|two sh ";perf2.summary(std::cout); //std::cout << std::endl;
 
   }
 
