@@ -17,12 +17,13 @@
 
 
 
-int main() {
+int main(int argc, char **) {
   int ret = 0;
 
   std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
   PerfStat::header(std::cout);
 
+  bool debug = argc>1;
 
   PerfStat ps; 
   test_verify(0==ps.calls());
@@ -40,6 +41,7 @@ int main() {
   test_verify(2==ps.calls());
   test_verify(2==ps.callsTot());
   ps.read(); ps.calib();
+  if(debug) ps.print(std::cout,true,true);
  
 
   {
@@ -57,8 +59,7 @@ int main() {
     perf.read(); perf.calib();
     // test_verify(perf.verify(0.01));
     std::cout <<"|    "; perf.summary(std::cout); //std::cout << std::endl;
-    // perf.print(std::cout);
-    // perf.print(std::cout,true);
+    if(debug) perf.print(std::cout,true,true);
   
     PerfStat perf1;
     s =0;
@@ -74,9 +75,7 @@ int main() {
     perf1.read(); perf1.calib();
     // test_verify(perf.verify(0.01));
     std::cout <<"|all    "; perf1.summary(std::cout); //std::cout << std::endl;
-    // perf.print(std::cout);
-    // perf.print(std::cout,true);
-    
+    if(debug) perf1.print(std::cout,true,true);
   }
   {
 
@@ -165,6 +164,7 @@ int main() {
     std::cout <<"|total  "; perf.summary(std::cout); //std::cout << std::endl;
     std::cout <<"|one sh ";perf1.summary(std::cout); //std::cout << std::endl;
     std::cout <<"|two sh ";perf2.summary(std::cout); //std::cout << std::endl;
+    if(debug) perf.print(std::cout,true,true);
 
   }
 

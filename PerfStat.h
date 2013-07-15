@@ -28,122 +28,123 @@ private:
 
   static constexpr int METRIC_COUNT=7;
   static constexpr int METRIC_OFFSET=3;
+  static constexpr int NGROUPS=2;
 
-  Type types1[METRIC_COUNT] = { 
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_SOFTWARE,
-    PERF_TYPE_SOFTWARE,
-    //    PERF_TYPE_HARDWARE,
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_RAW
-    // PERF_TYPE_RAW
+
+  Type types[NGROUPS][METRIC_COUNT] = {
+    {
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_SOFTWARE,
+      //    PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_RAW
+      // PERF_TYPE_RAW
+    }, { 
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_RAW,
+      // PERF_TYPE_RAW,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE
+    }
   };
 
-  Type types2[METRIC_COUNT] = { 
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_SOFTWARE,
-    PERF_TYPE_SOFTWARE,
-    PERF_TYPE_RAW,
-    // PERF_TYPE_RAW,
-    PERF_TYPE_HARDWARE,
-    PERF_TYPE_HARDWARE
+
+  Conf confs[NGROUPS][METRIC_COUNT]= {
+    {
+      PERF_COUNT_HW_CPU_CYCLES,
+      PERF_COUNT_HW_INSTRUCTIONS,
+      PERF_COUNT_SW_CPU_CLOCK,
+      PERF_COUNT_SW_TASK_CLOCK,
+      // 0x0488, // BR_INST_EXEC:INDIRECT_NON_CALL
+      //    PERF_COUNT_HW_BUS_CYCLES,
+      PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
+      PERF_COUNT_HW_BRANCH_MISSES,
+      // 0x0408,   // DTLB walk                                                       
+      //  0x0485  // ITLB walk
+      0x0280 // ICACHE.MISSES
+      // 0x02C2 // RETIRE_SLOTS
+    }, {
+      PERF_COUNT_HW_CPU_CYCLES,
+      PERF_COUNT_HW_INSTRUCTIONS,
+      PERF_COUNT_SW_CPU_CLOCK,
+      PERF_COUNT_SW_TASK_CLOCK,
+      0x0114,   // ARITH.DIV_BUSY
+      PERF_COUNT_HW_CACHE_REFERENCES,
+      PERF_COUNT_HW_CACHE_MISSES
+    }
   };
-
-
-  Conf confs1[METRIC_COUNT]= {
-    PERF_COUNT_HW_CPU_CYCLES,
-    PERF_COUNT_HW_INSTRUCTIONS,
-    PERF_COUNT_SW_CPU_CLOCK,
-    PERF_COUNT_SW_TASK_CLOCK,
-    // 0x0488, // BR_INST_EXEC:INDIRECT_NON_CALL
-    //    PERF_COUNT_HW_BUS_CYCLES,
-    PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
-    PERF_COUNT_HW_BRANCH_MISSES,
-    // 0x0408,   // DTLB walk                                                       
-    //  0x0485  // ITLB walk
-    0x0280 // ICACHE.MISSES
-    // 0x02C2 // RETIRE_SLOTS
-  };
-
-  Conf confs2[METRIC_COUNT]= {
-    PERF_COUNT_HW_CPU_CYCLES,
-    PERF_COUNT_HW_INSTRUCTIONS,
-    PERF_COUNT_SW_CPU_CLOCK,
-    PERF_COUNT_SW_TASK_CLOCK,
-    0x0114,   // ARITH.DIV_BUSY
-    PERF_COUNT_HW_CACHE_REFERENCES,
-    PERF_COUNT_HW_CACHE_MISSES
-  };
-
-  int fds0=0;
-  int fds1=0;
-  int fds=0;
-  unsigned long long ncalls=0;
-  unsigned long long ncalls0=0;
-  unsigned long long ncalls1=0;
+  
+  int fds[NGROUPS]={-1,};
+  int cfds=-1; // current one
+  int cgroup=NGROUPS-1;
+  unsigned long long ncalls[NGROUPS]=0;
+  unsigned long long totcalls=0;
   long long times[2];
   // 0 seems needed  +1 is rdtsc +2 is gettime
-  long long results0[METRIC_OFFSET+METRIC_COUNT+2];
-  long long results1[METRIC_OFFSET+METRIC_COUNT+2];
-
-  long long bias0[METRIC_OFFSET+METRIC_COUNT+2];
+  long long results[NGROUPS][METRIC_OFFSET+METRIC_COUNT+2];
+ 
+  long long bias[NGROUPS][METRIC_OFFSET+METRIC_COUNT+2];
   long long bias1[METRIC_OFFSET+METRIC_COUNT+2];
 
-  bool active=false;
   
 public:
-  unsigned long long calls() const { return ncalls;}
-  unsigned long long callsTot() const { return ncalls0+ncalls1;}
+  static template<typename T> T sum(T* t) { T s=0; for (int i=0; i!=NGROUPS; i++) s+=t[i]; return s;}
+  static template<typename T> T sum(T** t, int k) { T s=0; for (int i=0; i!=NGROUPS; i++) s+=t[i][k]; return s;}
+  static template<typename T> T corrsum(T** t, int k) { T s=0; for (int i=0; i!=NGROUPS; i++) s+=corr(i)*t[i][k]; return s;}
+  unsigned long long calls() const { return totcalls;}
+  unsigned long long callsTot() const { return sum(calls());}
 
   double nomClock() const { return double(times[0])/double(times[1]); }
   double clock() const { return double(cyclesRaw())/double(taskTimeRaw()); }
 
-  double corr0() const { return ( (0==ncalls0) | (0==results0[2]) ) ? 0 : double(calls())*double(results0[1])/(double(results0[2])*double(callsTot()));}
-  double corr1() const { return ( (0==ncalls1) | (0==results1[2]) ) ? 0 : double(calls())*double(results1[1])/(double(results1[2])*double(callsTot()));}
+  double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(ncalls(i))*double(results[i][1])/(double(results[i][2])*double(callsTot()));}
 
-  long long cyclesRaw() const { return results0[METRIC_OFFSET+0]+results1[METRIC_OFFSET+0];}
-  long long instructionsRaw() const { return results0[METRIC_OFFSET+1]+results1[METRIC_OFFSET+1];}
-  long long taskTimeRaw() const { return results0[METRIC_OFFSET+3]+results1[METRIC_OFFSET+3];}
+  long long cyclesRaw() const { return sum(results,METRIC_OFFSET+0);}
+  long long instructionsRaw() const { return sum(results,METRIC_OFFSET+1);}
+  long long taskTimeRaw() const { return sum(results,METRIC_OFFSET+3);}
   long long realTimeRaw() const { return results0[METRIC_OFFSET+METRIC_COUNT+1];}
 
 
-  double cyclesTot() const { return corr0()*results0[METRIC_OFFSET+0]+corr1()*results1[METRIC_OFFSET+0];}
-  double instructionsTot() const { return corr0()*results0[METRIC_OFFSET+1]+corr1()*results1[METRIC_OFFSET+1];}
-  double taskTimeTot() const { return corr0()*results0[METRIC_OFFSET+3]+corr1()*results1[METRIC_OFFSET+3];}
+  double cyclesTot() const { return corrsum(results,METRIC_OFFSET+0);}
+  double instructionsTot() const { return corrsum(results,METRIC_OFFSET+1);}
+  double taskTimeTot() const { return corrsum(results,METRIC_OFFSET+3);}
 
 
-  double cycles() const { return (0==ncalls) ? 0 : cyclesTot()/double(ncalls); }
-  double instructions() const { return (0==ncalls) ? 0 : instructionsTot()/double(ncalls); }
-  double taskTime() const { return (0==ncalls) ? 0 : taskTimeTot()/double(ncalls); }
-  double realTime() const { return (0==ncalls) ? 0 : double(results0[METRIC_OFFSET+METRIC_COUNT+1])/double(ncalls); }
+  double cycles() const { return (0==calls()) ? 0 : cyclesTot()/double(calls()); }
+  double instructions() const { return (0==calls()) ? 0 : instructionsTot()/double(calls()); }
+  double taskTime() const { return (0==calls()) ? 0 : taskTimeTot()/double(calls()); }
+  double realTime() const { return (0==calls()) ? 0 : double(results0[METRIC_OFFSET+METRIC_COUNT+1])/double(calls()); }
 
   // instructions per cycle
   double ipc() const { return double(instructionsRaw())/double(cyclesRaw());}
   
   // fraction of branch instactions
-  double brfrac() const { return double(results0[METRIC_OFFSET+4])/double(results0[METRIC_OFFSET+1]);}
+  double brfrac() const { return double(results[0][METRIC_OFFSET+4])/double(results[0][METRIC_OFFSET+1]);}
   // missed branches per cycle
-  double mbpc() const { return double(results0[METRIC_OFFSET+5])/double(results0[METRIC_OFFSET+0]);}
+  double mbpc() const { return double(results[0][METRIC_OFFSET+5])/double(results[0][METRIC_OFFSET+0]);}
 
   // double dtlbpc() const { return double(results0[METRIC_OFFSET+6])/double(results0[METRIC_OFFSET+0]);}
   // double itlbpc() const { return double(results0[METRIC_OFFSET+7])/double(results0[METRIC_OFFSET+0]);}
 
 
   // cache references per cycle
-  double crpc() const { return double(results1[METRIC_OFFSET+5])/double(results1[METRIC_OFFSET+0]);}
+  double crpc() const { return double(results[1][METRIC_OFFSET+5])/double(results[1][METRIC_OFFSET+0]);}
 
   // main memory references (cache misses) per cycle
-  double mrpc() const { return double(results1[METRIC_OFFSET+6])/double(results1[METRIC_OFFSET+0]);}
+  double mrpc() const { return double(results[1][METRIC_OFFSET+6])/double(results[1][METRIC_OFFSET+0]);}
 
   // div-busy per cycle
-  double  divpc() const { return double(results1[METRIC_OFFSET+4])/double(results1[METRIC_OFFSET+0]);}
+  double  divpc() const { return double(results[1][METRIC_OFFSET+4])/double(results[1][METRIC_OFFSET+0]);}
 
 
   // L1 instruction-cache misses  (per cycles)
-  double il1mpc() const { return double(results0[METRIC_OFFSET+6])/double(results0[METRIC_OFFSET+0]);}
+  double il1mpc() const { return double(results[0][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
 
   // fraction of bus cycles
   // double buspc() const { return double(results0[METRIC_OFFSET+4])/double(results0[METRIC_OFFSET+0]);}
@@ -153,13 +154,16 @@ public:
 
   // share file descriptors...
 
-  struct FD { int f0; int f1;};
-  FD fd() const { FD f{fds0,fds1}; return f;}
-  PerfStat(FD f) : fds0(f.f0), fds1(f.f1) {
-    ncalls=ncalls0=ncalls1=0;
+  struct FD { int * fds;};
+  FD fd() const { FD f; f.fds=fds; return f;}
+  PerfStat(FD f) : {
+    totcalls=0;
     times[0]=times[1]=0;
-    for	(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) results0[i]=results1[i]=bias0[i]=bias1[i]=0;
-  }
+    for (int k=0; k!=NGROUPS; k++) {
+      for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) results[k][i]=bias[k][i]=0;
+      ncalls[k]=0;
+      fds[k] = f.fds[k];
+    }
     
 
   void init() {
@@ -168,45 +172,44 @@ public:
     struct perf_event_attr pe;
     
     memset(&pe, 0, sizeof(struct perf_event_attr));
-    pe.type = types1[0];
+    pe.type = types[0][0];
     pe.size = sizeof(struct perf_event_attr);
-    pe.config = confs1[0];
+    pe.config = confs[0][0];
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.read_format = PERF_FORMAT_GROUP|PERF_FORMAT_TOTAL_TIME_ENABLED|PERF_FORMAT_TOTAL_TIME_RUNNING;
     pe.mmap = 0;
-    
-    fds0 = syscall(__NR_perf_event_open, &pe, id, cpuid, -1, flags);
-    pe.type = types2[0];
-    pe.config = confs2[0];
-    fds1 = syscall(__NR_perf_event_open, &pe, id, cpuid, -1, flags);
+    for (int k=0; k!=NGROUPS; k++) {
+      pe.type = types[k][0];
+      pe.config = confs[k][0];
+      fds[k] = syscall(__NR_perf_event_open, &pe, id, cpuid, -1, flags);
+    }
     pe.disabled = 0;
     
-    for	(int i=1; i!=METRIC_COUNT; ++i) {
-      pe.config = confs1[i]; pe.type = types1[i];
-      int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds0, flags);
-      if (fds==-1) std::cout << "error 0:" << i << " " << errno << " " << strerror(errno) << std::endl;
-    }
-
     // a small hack
     if (!isINTEL()) {
-      confs2[4] = PERF_COUNT_HW_BUS_CYCLES;
-      types2[4] = PERF_TYPE_HARDWARE;
+      confs[1][4] = PERF_COUNT_HW_BUS_CYCLES;
+      types[1][4] = PERF_TYPE_HARDWARE;
     }
     
-    for  (int i=1; i!=METRIC_COUNT; ++i) {
-      pe.config = confs2[i]; pe.type = types2[i];
-      int fds = syscall(__NR_perf_event_open, &pe, id, cpuid, fds1, flags);
-      if (fds==-1) std::cout << "error 1:" << i << " " << errno << " " << strerror(errno) << std::endl;
-    }
+    for (int k=0; k!=NGROUPS; k++) {
+      for  (int i=1; i!=METRIC_COUNT; ++i) {
+	pe.config = confs[k][i]; pe.type = types[k][i];
+	int f = syscall(__NR_perf_event_open, &pe, id, cpuid, fds1, flags);
+	if (f==-1) std::cout << "error 1:" << i << " " << errno << " " << strerror(errno) << std::endl;
+      }
     
-    ioctl(fds0, PERF_EVENT_IOC_RESET, 0);
-    ioctl(fds1, PERF_EVENT_IOC_RESET, 0);
-    ncalls=ncalls0=ncalls1=0;
-    times[0]=times[1]=0;
-    for	(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) results0[i]=results1[i]=bias0[i]=bias1[i]=0;
+    ioctl(fds[0], PERF_EVENT_IOC_RESET, 0);
+    ioctl(fds[1], PERF_EVENT_IOC_RESET, 0);
 
+    totcalls=0;
+    times[0]=times[1]=0;
+    for (int k=0; k!=NGROUPS; k++) {
+      for(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) results[k][i]=bias[k][i]=0;
+      ncalls[k]=0;
+    }
+    cgroup=NGROUPS-1;
     warmup();
   }
 
@@ -217,11 +220,13 @@ public:
   }
   
   void reset() {
-    ncalls=ncalls0=ncalls1=0;
-    for	(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) {
-      bias0[i]+=results0[i];
-      bias1[i]+=results1[i];
+    totcalls=0;
+    times[0]=times[1]=0;
+    for (int k=0; k!=NGROUPS; k++){
+      ncalls[k]=0;
+      for(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) bias[0][i]+=results[0][i];
     }
+    cgroup=NGROUPS=1;
     //    ::close(fds0);
     //::close(fds1);
     //init();
@@ -230,71 +235,58 @@ public:
   void start() {
     if(active) return;
     active=true;
-    ++ncalls;
-    if ((ncalls&1)==0) ++ncalls0; else ++ncalls1;
-    fds = ( (ncalls&1)==0) ? fds0 : fds1;
-    times[1] -= seconds();
-    ioctl(fds, PERF_EVENT_IOC_ENABLE, 0);
-    times[0] -= rdtsc();
+    if((++cgroup)==NGROUPS) cgroup=0;
+    start(cgroup);
   }
  
-  void start0() {
+  void start(int k) {
     if(active) return;
     active=true;
     ++ncalls;
-    ++ncalls0;
-    fds =  fds0;
+    ++ncalls[k];
+    cfds =  fds[k];
     times[1] -= seconds();
-    ioctl(fds, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(cfds, PERF_EVENT_IOC_ENABLE, 0);
     times[0] -= rdtsc();
   }
  
-  void start1() {
-    if(active) return;
-    active=true;
-    ++ncalls;
-    ++ncalls1;
-    fds =  fds1;
-    times[1] -= seconds();
-    ioctl(fds, PERF_EVENT_IOC_ENABLE, 0);
-    times[0] -= rdtsc();
-  }
+
  
   void startAll() {
     if(active) return;
     active=true;
     ++ncalls;
-    ++ncalls0;
-    ++ncalls1;
-    times[1] -= seconds();
-    ioctl(fds0, PERF_EVENT_IOC_ENABLE, 0);
-    ioctl(fds1, PERF_EVENT_IOC_ENABLE, 0);
+    for (int k=0; k!=NGROUPS; k++) {
+      ++ncalls[k];
+      ioctl(fds[k], PERF_EVENT_IOC_ENABLE, 0);
+    }
     times[0] -= rdtsc();
   }
  
  
   void stop() {
     times[0] += rdtsc();
-    ioctl(fds, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(cfds, PERF_EVENT_IOC_DISABLE, 0);
     times[1] += seconds();
     active=false;
-    fds=-1;
+    cfds=-1;
   }
  
   void stopAll() {
     times[0] += rdtsc();
-    ioctl(fds1, PERF_EVENT_IOC_DISABLE, 0);
-    ioctl(fds0, PERF_EVENT_IOC_DISABLE, 0);
+    for (int k=0; k!=NGROUPS; k++)
+      ioctl(fds[k], PERF_EVENT_IOC_DISABLE, 0);
     times[1] += seconds();
     active=false;
-    fds=-1;
+    cfds=-1;
   }
   
 
   int read() {
-    auto ret = ::read(fds0, results0, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
-    results0[METRIC_OFFSET+METRIC_COUNT]=times[0];results0[METRIC_OFFSET+METRIC_COUNT+1]=times[1];
-    ret = std::min(ret,::read(fds1, results1, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+    int ret=0;
+    for (int k=0; k!=NGROUPS; k++)
+      ret = std::min(ret,::read(fds[k], results[k], (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+    results[0][METRIC_OFFSET+METRIC_COUNT]=times[0];results[0][METRIC_OFFSET+METRIC_COUNT+1]=times[1];
     return ret;
   }
 
@@ -303,77 +295,74 @@ public:
     read();calib();
     auto ok = [=](double x, double y) { return std::abs((x-y)/y)<res;};
     bool ret=true;
-    if (ncalls0>0) {
-      ret &= ok(results0[1],results0[METRIC_OFFSET+METRIC_COUNT+1]);
-    }
-    if (ncalls1>1) {
-      ret &= ok(results1[1],results1[METRIC_OFFSET+METRIC_COUNT+1]);
-    }
-    ret &= ok(results0[2]+results1[2],results0[METRIC_OFFSET+3]);
+    for (int k=0; k!=NGROUPS; k++)
+      if (ncalls[k]>0) 
+	ret &= ok(results[k][1],results[k][METRIC_OFFSET+METRIC_COUNT+1]);
+
+    ret &= ok(sum(results,2),results0[METRIC_OFFSET+3]);
     return ret;
   }
 
   void warmup() {
    if(active) return;
-    for (int i=0; i!=20; ++i) {start();stop();}
-    read();
-    ncalls-=20; ncalls0-=10;ncalls1-=10;
-    for (int i=1; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) {
-      bias0[i] +=results0[i];
-      bias1[i] +=results1[i];
-    }
+   for (int i=0; i!==10*NGROUPS; ++i) {start();stop();}
+   read();
+   totcalls-=10*NGROUPS; 
+   for (int k=0; k!=NGROUPS; k++) {
+     ncalls[k]-=10;
+     for (int i=1; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) 
+       bias[k][i] +=results[k][i];
+   }
   }
 
   void calib() {
     if(active) return;
-
-    for (int i=0; i!=20; ++i) {start();stop();}
-    ncalls-=20; ncalls0-=10;ncalls1-=10;
-
-    long long results0c[METRIC_COUNT+METRIC_OFFSET+2];
-    long long results1c[METRIC_COUNT+METRIC_OFFSET+2];
-    auto err = ::read(fds0, results0c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
-    err = std::min(err,::read(fds1, results1c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
-    results0c[METRIC_OFFSET+METRIC_COUNT]=times[0];results0c[METRIC_OFFSET+METRIC_COUNT+1]=times[1];
+    
+    for (int i=0; i!==10*NGROUPS; ++i) {start();stop();}
+    ncalls-=10*NGROUPS; 
+    for (int k=0; k!=NGROUPS; k++) ncalls[k]-=10;
+    
+    long long results_c[NGROUPS][METRIC_COUNT+METRIC_OFFSET+2];
+    int err=0;
+    for (int k=0; k!=NGROUPS; k++)
+      err = std::min(err,::read(fds[k], results_c[k], (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+    results_c[0][METRIC_OFFSET+METRIC_COUNT]=times[0];results_c[0][METRIC_OFFSET+METRIC_COUNT+1]=times[1];
     if (err==-1) return;
-    for (int i=1; i!=METRIC_OFFSET+METRIC_COUNT+2; ++i) {
-      results0c[i]-=results0[i];
-      results1c[i]-=results1[i];
-      results0[i] -= ncalls0*results0c[i]/10 + bias0[i];
-      results1[i] -= ncalls1*results1c[i]/10 + bias1[i];
-      // update bias for next read...
-      bias0[i] +=results0c[i];
-      bias1[i] +=results1c[i];
+    for (int k=0; k!=NGROUPS; k++) {
+      for (int i=1; i!=METRIC_OFFSET+METRIC_COUNT+2; ++i) {
+	results_c[k][i]-=results[k][i];
+	results[k][i] -= ncalls[k]*results_c[k][i]/10 + bias[k][i];
+	// update bias for next read...
+	bias[k][i] +=results_c[k][i];
+      }
     }
   }
   
 
   void startDelta() {
-   if(active) return;
-    long long results0c[METRIC_COUNT+METRIC_OFFSET];
-    long long results1c[METRIC_COUNT+METRIC_OFFSET];
-    auto err = ::read(fds0, results0c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
-    err = std::min(err,::read(fds1, results1c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
-    if (err==-1) return;
-    for (int i=0; i!=METRIC_OFFSET+METRIC_COUNT; ++i) {
-      results0[i] -= results0c[i];
-      results1[i] -= results1c[i];
+    if(active) return;
+    long long results_c[METRIC_COUNT+METRIC_OFFSET];
+    int err=0;
+    for (int k=0; k!=NGROUPS; k++) {
+      err = std::min(err,::read(fds[k], results_c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+      for (int i=0; i!=METRIC_OFFSET+METRIC_COUNT; ++i)
+	results[k][i] -= results_c[i];
     }
+    if (err==-1) return;
     start();
   }
 
   void stopDelta() {
-   if(!active) return;
+    if(!active) return;
     stop();
-    long long results0c[METRIC_COUNT+METRIC_OFFSET];
-    long long results1c[METRIC_COUNT+METRIC_OFFSET];
-    auto err = ::read(fds0, results0c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long));
-    err = std::min(err,::read(fds1, results1c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
-    if (err==-1) return;
-    for (int i=0; i!=METRIC_OFFSET+METRIC_COUNT; ++i) {
-      results0[i] += results0c[i];
-      results1[i] += results1c[i];
+    long long results_c[METRIC_COUNT+METRIC_OFFSET];
+    int err=0;
+    for (int k=0; k!=NGROUPS; k++) {
+      err = std::min(err,::read(fds[k], results_c, (METRIC_OFFSET+METRIC_COUNT)*sizeof(long long)));
+      for (int i=0; i!=METRIC_OFFSET+METRIC_COUNT; ++i)
+	results[k][i] += results_c[i];
     }
+    if (err==-1) return;
   }
 
 
@@ -424,22 +413,18 @@ public:
     
     if (!debug) return;
 
-    out << double(results0[METRIC_OFFSET+METRIC_COUNT])/double(results0[METRIC_OFFSET+METRIC_COUNT+1]) 
-	<< " "<<  double(results0[METRIC_OFFSET+0])/double(results1[METRIC_OFFSET+1]) 
-	<< " "<<  double(cyclesRaw())/double(results0[METRIC_OFFSET+METRIC_COUNT])
-	<< " "<<  double(taskTimeRaw())/double(results0[METRIC_OFFSET+METRIC_COUNT+1]) << std::endl;
-    out << ncalls0 << " ";
-    for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i)  out << results0[i] << " ";
-    out << "; " <<  double(results0[METRIC_OFFSET+0])/double(results0[METRIC_OFFSET+3]) 
-	<< " " << double(results0[METRIC_OFFSET+1])/double(results0[METRIC_OFFSET+0])
-	<< " " << double(results0[2])/double(results0[1]);
-    out  << std::endl;
-    out << ncalls1 << " ";
-    for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET; ++i)  out << results1[i] << " ";
-    out  << "; "<< double(results1[METRIC_OFFSET+0])/double(results1[METRIC_OFFSET+3]) 
-	<< " " << double(results1[METRIC_OFFSET+1])/double(results1[METRIC_OFFSET+0])
-	<< " " << double(results1[2])/double(results1[1]);
-
+    out << double(results[0][METRIC_OFFSET+METRIC_COUNT])/double(results[0][METRIC_OFFSET+METRIC_COUNT+1]) 
+	<< " "<<  double(results[0][METRIC_OFFSET+0])/double(results[1][METRIC_OFFSET+1]) 
+	<< " "<<  double(cyclesRaw())/double(results[0][METRIC_OFFSET+METRIC_COUNT])
+	<< " "<<  double(taskTimeRaw())/double(results[0][METRIC_OFFSET+METRIC_COUNT+1]) << std::endl;
+    for (int k=0; k!=NGROUPS; k++) {
+      out << ncalls[k] << " ";
+      for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i)  out << results[k][i] << " ";
+      out << "; " <<  double(results[k][METRIC_OFFSET+0])/double(results[k][METRIC_OFFSET+3]) 
+	  << " " << double(results[k][METRIC_OFFSET+1])/double(results[k][METRIC_OFFSET+0])
+	  << " " << double(results[k][2])/double(results[k][1]);
+      out  << std::endl;
+    }
     out  << std::endl;
     
   }
