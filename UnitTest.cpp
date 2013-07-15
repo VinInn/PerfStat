@@ -28,7 +28,7 @@ int main(int argc, char **) {
   PerfStat ps; 
   test_verify(0==ps.calls());
   test_verify(0==ps.callsTot());
-  ps.read(); ps.calib();
+  test_verify(0==ps.read()); ps.calib();
   test_verify(0==ps.calls());
   test_verify(0==ps.callsTot());
   test_verify(0==ps.cyclesRaw());
@@ -40,7 +40,7 @@ int main(int argc, char **) {
   ps.start();ps.stop();
   test_verify(2==ps.calls());
   test_verify(2==ps.callsTot());
-  ps.read(); ps.calib();
+  test_verify(0==ps.read()); ps.calib();
   if(debug) ps.print(std::cout,true,true);
  
 
@@ -58,7 +58,7 @@ int main(int argc, char **) {
     test_verify(100==perf.callsTot());
     perf.read(); perf.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|    "; perf.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|default  "; perf.summary(std::cout); //std::cout << std::endl;
     if(debug) perf.print(std::cout,true,true);
   
     PerfStat perf1;
