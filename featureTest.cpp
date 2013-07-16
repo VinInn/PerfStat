@@ -21,7 +21,7 @@ inline T polyEstrin(T y) {
 }
 
 
-int main() {
+int main0() {
 
   bool ret=true;
   {
@@ -29,7 +29,7 @@ int main() {
     
     PerfStat perf;
     std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
-    PerfStat::header(std::cout);
+    PerfStat::header(std::cout,true);
     
     double s =0;
     for (int k=0; k!=100; ++k) {
@@ -42,7 +42,7 @@ int main() {
     } 
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
     
     std::cout << "|log  ";
     perf.print(std::cout);
@@ -56,16 +56,14 @@ int main() {
     double s =0;
     for (int k=0; k!=100; ++k) {
       perf.start();
-      
       for (int i=1; i!=1000001; ++i) s+= std::log2(i+1);
-      
       perf.stop();
       
     }
     
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
     
     std::cout << "|log2  ";
     perf.print(std::cout);
@@ -81,13 +79,11 @@ int main() {
       perf.start();
       float c = 1.f/1000000.f;
       for (int i=1; i<10000001; ++i) s+= polyHorner((float(i)+1.f)*c);
-      
       perf.stop();
-
-     }
+    }
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
 
    std::cout << "|Horner f  ";
    perf.print(std::cout,true);
@@ -101,13 +97,11 @@ int main() {
       perf.start();
       float c = 1.f/1000000.f;
       for (int i=1; i<10000001; ++i) s+= polyEstrin((float(i)+1.f)*c);
-      
-      perf.stop();
-      
+      perf.stop();     
     }
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
 
     
     std::cout << "|Estrin f  ";
@@ -123,12 +117,11 @@ int main() {
       perf.start();
       double c = 1./1000000.;
       for (int i=1; i<10000001; ++i) s+= polyHorner((i+1)*c);
-      perf.stop();                                                  
-      
+      perf.stop();                                                        
     }
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
 
     
     std::cout << "|Horner d  ";
@@ -144,18 +137,16 @@ int main() {
       perf.start();
       double c = 1./1000000.;
       for (int i=1; i<10000001; ++i) s+= polyEstrin((i+1)*c);
-      perf.stop();
-      
+      perf.stop();      
     }
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
 
     
     std::cout << "|Estrin d  ";
     perf.print(std::cout,true);
   }
-  
 
 
   {
@@ -165,13 +156,11 @@ int main() {
     for (int k=0; k!=100; ++k) {
       perf.start();
       for (int i=1; i<10000001; ++i) s+= 1.f/(float(i)+1.f);
-
       perf.stop();
-      
     }
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
     
    std::cout << "|inv f  ";
    perf.print(std::cout,true);
@@ -186,12 +175,11 @@ int main() {
      perf.start();
      for (int i=1; i<10000001; ++i) s+= 1./(i+1.);
      perf.stop();
-
      }
 
     ret &= s!=0;
 
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
 
 
    std::cout << "|inv d  ";
@@ -207,12 +195,11 @@ int main() {
      perf.start();
      for (int i=1; i<10000001; ++i) s+= std::sqrt(i+1.);
      perf.stop();
-     
    }
    
    ret &= s!=0;
    
-   std::cout << " " << s << std::endl;
+   //std::cout << " " << s << std::endl;
    
    std::cout << "|sqrt d  ";
    perf.print(std::cout,true);
@@ -221,4 +208,210 @@ int main() {
  
  
  return ret ? 0 : -1;
+}
+
+
+#include <random>
+
+int main1() {
+
+  constexpr int NN = 1024*1;
+  alignas(128) float rf[NN];
+  alignas(128) double rd[NN];
+
+  std::mt19937 eng;
+  std::uniform_real_distribution<float> rgen(0.5,1.5);
+  for (int i=0;i!=NN;++i)
+    rd[i]=rf[i]=rgen(eng);
+
+
+
+  bool ret=true;
+  {
+    
+    
+    PerfStat perf;
+    std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
+    PerfStat::header(std::cout,true);
+    
+    double s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();    
+      
+      for (int i=0; i!=NN; ++i) s+= std::log(rd[i]);
+      
+      perf.stop();
+      
+    } 
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+    
+    std::cout << "|log  ";
+    perf.print(std::cout);
+
+  }
+
+  {
+    PerfStat perf;
+    
+    
+    double s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= std::log2(rd[i]);
+      perf.stop();
+      
+    }
+    
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+    
+    std::cout << "|log2  ";
+    perf.print(std::cout);
+    
+  }
+  
+
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= polyHorner(rf[i]);
+      perf.stop();
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+   std::cout << "|Horner f  ";
+   perf.print(std::cout,true);
+}
+
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= polyEstrin(rf[i]);
+      perf.stop();     
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+    
+    std::cout << "|Estrin f  ";
+    perf.print(std::cout,true);
+  }
+
+
+  {
+    PerfStat perf;
+    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    double s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= polyHorner(rd[i]);
+      perf.stop();                                                        
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+    
+    std::cout << "|Horner d  ";
+    perf.print(std::cout,true);
+  }
+
+
+  {
+    PerfStat perf;
+    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    double s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= polyEstrin(rd[i]);
+      perf.stop();      
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+    
+    std::cout << "|Estrin d  ";
+    perf.print(std::cout,true);
+  }
+
+
+  {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
+    for (int k=0; k!=10000; ++k) {
+      perf.start();
+      for (int i=0; i!=NN; ++i) s+= 1.f/rf[i];
+      perf.stop();
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+    
+   std::cout << "|inv f  ";
+   perf.print(std::cout,true);
+}
+
+
+{
+  PerfStat perf;
+   // double precision and int. it wil vectorize in mix 128 for int and 256 for double          
+   double s =0;
+    for (int k=0; k!=10000; ++k) {
+     perf.start();
+     for (int i=0; i!=NN; ++i) s+= 1./rd[i];
+     perf.stop();
+     }
+
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+
+   std::cout << "|inv d  ";
+   perf.print(std::cout,true);
+}
+
+
+{
+  PerfStat perf;
+   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+   double s =0;
+   for (int k=0; k!=10000; ++k) {
+     perf.start();
+     for (int i=0; i!=NN; ++i) s+= std::sqrt(rd[i]);
+     perf.stop();
+   }
+   
+   ret &= s!=0;
+   
+   //std::cout << " " << s << std::endl;
+   
+   std::cout << "|sqrt d  ";
+   perf.print(std::cout,true);
+ }
+ 
+ 
+ 
+ return ret ? 0 : -1;
+}
+
+
+int main() {
+  return main0() + main1();
+
+
 }

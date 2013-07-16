@@ -28,7 +28,7 @@ private:
 
   static constexpr int METRIC_COUNT=7;
   static constexpr int METRIC_OFFSET=3;
-  static constexpr int NGROUPS=2;
+  static constexpr int NGROUPS=3;
 
 
   Type types[NGROUPS][METRIC_COUNT] = {
@@ -51,6 +51,14 @@ private:
       // PERF_TYPE_RAW,
       PERF_TYPE_HARDWARE,
       PERF_TYPE_HARDWARE
+    }, { 
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_RAW,
+      PERF_TYPE_RAW,
+      PERF_TYPE_RAW
     }
   };
 
@@ -77,7 +85,16 @@ private:
       0x0114,   // ARITH.DIV_BUSY
       PERF_COUNT_HW_CACHE_REFERENCES,
       PERF_COUNT_HW_CACHE_MISSES
-    }
+    }, {
+      PERF_COUNT_HW_CPU_CYCLES,
+      PERF_COUNT_HW_INSTRUCTIONS,
+      PERF_COUNT_SW_CPU_CLOCK,
+      PERF_COUNT_SW_TASK_CLOCK,
+      0x0408,   // DTLB walk                                                       
+      0x0485,  // ITLB walk
+      // 0x0280 // ICACHE.MISSES
+      0x02C2 // RETIRE_SLOTS
+     }
   };
   
   int fds[NGROUPS]={-1,};
@@ -99,12 +116,15 @@ public:
   template<typename T> 
   static T sum(T const * t) { T s=0; for (int i=0; i!=NGROUPS; i++) s+=t[i]; return s;}
   
+  static constexpr int ngroups() { return NGROUPS;}
+
   unsigned long long calls() const { return totcalls;}
   unsigned long long callsTot() const { return sum(ncalls);}
   
   double nomClock() const { return double(times[0])/double(times[1]); }
   double clock() const { return double(cyclesRaw())/double(taskTimeRaw()); }
-  
+  double turbo() const { return cyclesTot()/double(nomCyclesRaw());}
+
   // double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(ncalls[i])*double(results[i][1])/(double(results[i][2])*double(callsTot()));}
   double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(results[i][1])/(double(results[i][2])*(multiplex ? double(NGROUPS) : 1. ));}
   
@@ -113,6 +133,7 @@ public:
   long long instructionsRaw() const { return sum(METRIC_OFFSET+1);}
   long long taskTimeRaw() const { return sum(METRIC_OFFSET+3);}
   long long realTimeRaw() const { return results[0][METRIC_OFFSET+METRIC_COUNT+1];}
+  long long nomCyclesRaw() const { return results[0][METRIC_OFFSET+METRIC_COUNT+0];}
   
   
   double corrsum(int k) const { double s=0; for (int i=0; i!=NGROUPS; i++) s+=corr(i)*results[i][k]; return s;}
@@ -134,8 +155,9 @@ public:
   // missed branches per cycle
   double mbpc() const { return double(results[0][METRIC_OFFSET+5])/double(results[0][METRIC_OFFSET+0]);}
   
-  // double dtlbpc() const { return double(results0[METRIC_OFFSET+6])/double(results0[METRIC_OFFSET+0]);}
-  // double itlbpc() const { return double(results0[METRIC_OFFSET+7])/double(results0[METRIC_OFFSET+0]);}
+  double dtlbpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
+  double itlbpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
+  double rslotpc() const { return double(results[2][METRIC_OFFSET+6])/double(results[2][METRIC_OFFSET+0]);}
   
   
   // cache references per cycle
@@ -225,7 +247,6 @@ public:
   
   void reset() {
     totcalls=0;
-    times[0]=times[1]=0;
     for (int k=0; k!=NGROUPS; k++){
       ncalls[k]=0;
       for(int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) bias[0][i]+=results[0][i];
@@ -369,17 +390,17 @@ public:
       for (int i=0; i!=METRIC_OFFSET+METRIC_COUNT; ++i)
 	results[k][i] += results_c[i];
     }
+    results[0][METRIC_OFFSET+METRIC_COUNT]=times[0];results[0][METRIC_OFFSET+METRIC_COUNT+1]=times[1];
     if (err==-1) return;
   }
 
 
 
-  static void header(std::ostream & out) {
+  static void header(std::ostream & out, bool details=false) {
     const char * sepF = "|  *"; 
     const char * sep = "*|  *"; 
     const char * sepL = "*|"; 
-    out << sepF << "clock"
-	<< sep << "time"    
+    out << sepF  << "time"    
 	<< sep << "cycles" 
 	<< sep << "ipc"
 	<< sep << "br/ins"
@@ -388,16 +409,22 @@ public:
 	<< sep << "mem-ref/cy"
 	<< sep <<  (isINTEL() ? "div/cy" : "bus/cy")
 	<< sep << "missed-L1I/cy"
-      //	<< sep << "dtlb-walk/cy"
-      //	<< sep << "itlb-walk/cy"
+      	<< sep << "dtlb-walk/cy"
+      	<< sep << "itlb-walk/cy"
+      	<< sep << "rslot/cy"
       //	<< sep << "bus/cy"
-	<< sepL << std::endl;
+      ;
+    if (details) {
+      out << sep << "clock"
+	  << sep << "turbo"
+	  << sep << "multiplex";
+    }
+    out << sepL << std::endl;
   }
   
-  void summary(std::ostream & out, double mult=1.e-6, double percent=100.) const {
+  void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const {
     const char * sep = "|  "; 
-    out << sep << clock()  
-	<< sep << mult*taskTime() 
+    out << sep << mult*taskTime() 
 	<< sep << mult*cycles() 
 	<< sep << ipc()
 	<< sep << percent*brfrac()
@@ -406,17 +433,24 @@ public:
 	<< sep << percent*mrpc()
 	<< sep << percent*divpc()
 	<< sep << percent*il1mpc()
-      // 	<< sep << dtlbpc()
-      // 	<< sep << itlbpc()
+       	<< sep << dtlbpc()
+       	<< sep << itlbpc()
+       	<< sep << rslotpc()
       // buspc()
-	<< sep << std::endl;
+      ;
+    if (details) {
+      out << sep << clock()
+	  << sep << turbo() << sep;
+      for (int k=0; k!=NGROUPS; k++) { out << percent/corr(k) <<",";}
+    }
+    out << sep << std::endl;
   }
 
   void print(std::ostream & out, bool docalib=true, bool debug=false) {
     if (-1==read()) out << "error in reading" << std::endl;
     if (docalib) calib();  
 
-    summary(out);
+    summary(out,true);
     
     if (!debug) return;
 

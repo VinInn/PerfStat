@@ -26,6 +26,7 @@ int main(int argc, char **) {
 
   std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
   std::cout << "|test   "; PerfStat::header(std::cout);
+  std::cout << "|test   "; PerfStat::header(std::cout,true);
 
   bool debug = argc>1;
 
@@ -65,6 +66,7 @@ int main(int argc, char **) {
     test_verify(ok(perf.cyclesRaw()/double(perf.calls()),perf.cycles()));
     // test_verify(perf.verify(0.01));
     std::cout <<"|default  "; perf.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|default  "; perf.summary(std::cout,true); //std::cout << std::endl;
     if(debug) perf.print(std::cout,true,true);
   
     PerfStat perf1(true);
@@ -77,10 +79,10 @@ int main(int argc, char **) {
     }
     ret &= (s!=0);
     test_verify(100==perf1.calls());
-    test_verify(200==perf1.callsTot());
+    test_verify(100*PerfStat::ngroups()==perf1.callsTot());
     perf1.read(); perf1.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|multi   "; perf1.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|multi   "; perf1.summary(std::cout,true); //std::cout << std::endl;
     if(debug) perf1.print(std::cout,true,true);
   }
   {
@@ -106,8 +108,8 @@ int main(int argc, char **) {
     perf1.read(); perf1.calib();
     perf2.read(); perf2.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|one    ";perf1.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|two    ";perf2.summary(std::cout);// std::cout << std::endl;
+    std::cout <<"|one    ";perf1.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|two    ";perf2.summary(std::cout,true);// std::cout << std::endl;
 
 
   }
@@ -134,8 +136,8 @@ int main(int argc, char **) {
     perf1.read(); perf1.calib();
     perf2.read(); perf2.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|0      ";perf1.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|1      ";perf2.summary(std::cout);// std::cout << std::endl;
+    std::cout <<"|0      ";perf1.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|1      ";perf2.summary(std::cout,true);// std::cout << std::endl;
     if(debug) perf1.print(std::cout,true,true);
     if(debug) perf2.print(std::cout,true,true);
   }
@@ -153,12 +155,12 @@ int main(int argc, char **) {
       perf1.stop();
       
     }
-    test_verify(200==perf1.calls());
-    test_verify(200==perf1.callsTot());
+    test_verify(100*PerfStat::ngroups()==perf1.calls());
+    test_verify(100*PerfStat::ngroups()==perf1.callsTot());
     ret &= (s1!=0);
     perf1.read(); perf1.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|0/1    ";perf1.summary(std::cout);// std::cout << std::endl;
+    std::cout <<"|0/1    ";perf1.summary(std::cout,true);// std::cout << std::endl;
     if(debug) perf1.print(std::cout,true,true);
 
   }
@@ -187,7 +189,7 @@ int main(int argc, char **) {
     ret &= (s1!=0);ret &= (s2!=0);
     perf1.read(); perf1.calib();
     // test_verify(perf.verify(0.01));
-    std::cout <<"|reset ";perf1.summary(std::cout);// std::cout << std::endl;
+    std::cout <<"|reset ";perf1.summary(std::cout,true);// std::cout << std::endl;
 
 
   }
@@ -220,9 +222,9 @@ int main(int argc, char **) {
 //    perf2.calib();
     // test_verify(perf.verify(0.01));
     perf.read(); perf.calib();
-    std::cout <<"|total  "; perf.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|one sh ";perf1.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|two sh ";perf2.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|total  "; perf.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|one sh ";perf1.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|two sh ";perf2.summary(std::cout,true); //std::cout << std::endl;
     if(debug) perf.print(std::cout,true,true);
 
   }
@@ -245,18 +247,18 @@ int main(int argc, char **) {
     }
     ret &= (s1!=0);ret &= (s2!=0);
     test_verify(100==perf.calls());
-    test_verify(200==perf.callsTot());
+    test_verify(100*PerfStat::ngroups()==perf.callsTot());
     test_verify(100==perf1.calls());
-    test_verify(200==perf1.callsTot());
+    test_verify(100*PerfStat::ngroups()==perf1.callsTot());
     test_verify(100==perf2.calls());
-    test_verify(200==perf2.callsTot());
+    test_verify(100*PerfStat::ngroups()==perf2.callsTot());
 //    perf1.calib();
 //    perf2.calib();
     // test_verify(perf.verify(0.01));
     perf.read(); perf.calib();
-    std::cout <<"|totmp  "; perf.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|one mp ";perf1.summary(std::cout); //std::cout << std::endl;
-    std::cout <<"|two mp ";perf2.summary(std::cout); //std::cout << std::endl;
+    std::cout <<"|totmp  "; perf.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|one mp ";perf1.summary(std::cout,true); //std::cout << std::endl;
+    std::cout <<"|two mp ";perf2.summary(std::cout,true); //std::cout << std::endl;
     if(debug) perf.print(std::cout,true,true);
 
   }
