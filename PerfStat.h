@@ -93,6 +93,7 @@ private:
   long long bias1[METRIC_OFFSET+METRIC_COUNT+2];
 
   bool active=false;
+  bool multiplex=false;
   
 public:
   template<typename T> 
@@ -104,7 +105,8 @@ public:
   double nomClock() const { return double(times[0])/double(times[1]); }
   double clock() const { return double(cyclesRaw())/double(taskTimeRaw()); }
   
-  double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(ncalls[i])*double(results[i][1])/(double(results[i][2])*double(callsTot()));}
+  // double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(ncalls[i])*double(results[i][1])/(double(results[i][2])*double(callsTot()));}
+  double corr(int i) const { return ( (0==ncalls[i]) | (0==results[i][2]) ) ? 0 : double(results[i][1])/(double(results[i][2])*(multiplex ? double(NGROUPS) : 1. ));}
   
   long long sum(int k) const { long long s=0; for (int i=0; i!=NGROUPS; i++) s+=results[i][k]; return s;}
   long long cyclesRaw() const { return sum(METRIC_OFFSET+0);}
@@ -153,13 +155,13 @@ public:
   // double buspc() const { return double(results0[METRIC_OFFSET+4])/double(results0[METRIC_OFFSET+0]);}
   
 
-  PerfStat() { init();}
+  PerfStat(bool imultiplex=false) : multiplex(imultiplex){ init();}
   
   // share file descriptors...
   
-  struct FD { int const * fds;};
-  FD fd() const { FD f; f.fds=fds; return f;}
-  PerfStat(FD f) {
+  struct FD { int const * fds; bool mplex;};
+  FD fd() const { FD f; f.fds=fds; f.mplex=multiplex; return f;}
+  PerfStat(FD f) : multiplex(f.mplex) {
     totcalls=0;
     times[0]=times[1]=0;
     for (int k=0; k!=NGROUPS; k++) {
@@ -236,6 +238,7 @@ public:
 
   void start() {
     if(active) return;
+    if (multiplex) return startAll();
     if((++cgroup)==NGROUPS) cgroup=0;
     start(cgroup);
   }
@@ -266,6 +269,7 @@ public:
  
  
   void stop() {
+    if (multiplex) return stopAll();
     times[0] += rdtsc();
     ioctl(cfds, PERF_EVENT_IOC_DISABLE, 0);
     times[1] += seconds();
@@ -305,22 +309,24 @@ public:
   }
 
   void warmup() {
-   if(active) return;
-   for (int i=0; i!=10*NGROUPS; ++i) {start();stop();}
-   read();
-   totcalls-=10*NGROUPS; 
-   for (int k=0; k!=NGROUPS; k++) {
-     ncalls[k]-=10;
-     for (int i=1; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) 
-       bias[k][i] +=results[k][i];
-   }
+    if(active) return;
+    int nloop = multiplex ? 10 : 10*NGROUPS;
+    for (int i=0; i!=nloop; ++i) {start();stop();}
+    read();
+    totcalls-=nloop; 
+    for (int k=0; k!=NGROUPS; k++) {
+      ncalls[k]-=10;
+      for (int i=1; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i) 
+	bias[k][i] +=results[k][i];
+    }
   }
 
   void calib() {
     if(active) return;
     
-    for (int i=0; i!=10*NGROUPS; ++i) {start();stop();}
-    totcalls-=10*NGROUPS; 
+    int nloop = multiplex ? 10 : 10*NGROUPS;
+    for (int i=0; i!=nloop; ++i) {start();stop();}
+    totcalls-=nloop; 
     for (int k=0; k!=NGROUPS; k++) ncalls[k]-=10;
     
     long long results_c[NGROUPS][METRIC_COUNT+METRIC_OFFSET+2];
