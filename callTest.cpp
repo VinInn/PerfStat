@@ -19,13 +19,12 @@ struct A {
 
 };
 
-int A::val() const { return i;}
 
 struct B : public A {
   B(){}
  B(int ii) : A(ii){}
 
-  virtual int ival() const override { return i;}
+  virtual int ival() const override;
   virtual int jval() const final { return i;}
   virtual int kval() const final { return i;}
 
@@ -35,18 +34,34 @@ struct C : public A {
   C(){}
   C(int ii) : A(ii){}
 
-  virtual int ival() const override { return i;}
+  virtual int ival() const override;
   virtual int jval() const final { return i;}
   virtual int kval() const override { return i;}
 
 };
 
+#ifndef WITHLIB 
+int A::val() const { return i;}
+int B::ival() const { return i;}
+int C::ival() const { return i;}
+
 void modify(A**){}
 void modify(C**){}
 void modify(C*){}
 
+void hello() { std::cout << "from main" << std::endl;}
+#else
+void modify(A**);
+void modify(C**);
+void modify(C*);
+
+void hello();
+
+#endif
 
 int main(int argc, char** argv) {
+
+  hello();
 
   bool nostring = argc>1;
   bool q1 = argc>2;
@@ -58,6 +73,7 @@ int main(int argc, char** argv) {
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
   PerfStat c41, c42, c43;
+  PerfStat if1;
   PerfStat mn, md, ss1, ss2;
 
   constexpr int NN =1024*4;
@@ -192,9 +208,16 @@ int main(int argc, char** argv) {
       s[k] += d[i].jval();
     c43.stop();
 
+    if1.start();
+    for (int i=0;i!=NN;++i) {
+      if (0==(a[i]->ival()&1)) b[i]->i = c[i]->ival(); else b[i]->i = d[i].jval();
+      if (b[i]->jval()&1) s[k] += d[c[i]->kval()].jval();
+    }
+    if1.stop();
 
+    modify(a);modify(b); modify(c);modify(d);
     if (k>0 && s[k] != s[k-1]) err=true;
-    
+
   }
 
   if (err) std::cout << "a mess " << std::endl;
@@ -215,6 +238,7 @@ int main(int argc, char** argv) {
   std::cout << "|d  val  "; c41.print(std::cout);
   std::cout << "|d ival  "; c42.print(std::cout);
   std::cout << "|d jval  "; c43.print(std::cout);
+  std::cout << "|if      "; if1.print(std::cout);
 
   return err ? -1 : 0;
 
