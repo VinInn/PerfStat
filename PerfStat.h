@@ -69,7 +69,9 @@ private:
       PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
-      // 0x0488, // BR_INST_EXEC:INDIRECT_NON_CALL
+      // 0xc488, // All indirect branches that are not calls nor returns.
+      // 0xc888,   // All indirect return branches
+      // 0xd088,  // All non-indirect calls executed.
       //    PERF_COUNT_HW_BUS_CYCLES,
       PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
       PERF_COUNT_HW_BRANCH_MISSES,
@@ -433,8 +435,8 @@ public:
 	<< sep << percent*mrpc()
 	<< sep << percent*divpc()
 	<< sep << percent*il1mpc()
-       	<< sep << dtlbpc()
-       	<< sep << itlbpc()
+       	<< sep << percent*1000.*1000.*dtlbpc()
+       	<< sep << percent*1000.*1000.*itlbpc()
        	<< sep << rslotpc()
       // buspc()
       ;

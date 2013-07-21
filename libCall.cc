@@ -33,9 +33,25 @@ struct C : public A {
 
 };
 
+
+struct E : public A {
+  E(){}
+  E(int ii) : A(ii){}
+
+  virtual int ival() const override;
+  virtual int jval() const final;
+  virtual int kval() const override { return i;}
+
+};
+
+
 int A::val() const { return i;}
 int B::ival() const { return i;}
 int C::ival() const { return i;}
+
+int E::ival() const { return i;}
+int E::jval() const { return i;}
+
 
 
 void modify(A**){}

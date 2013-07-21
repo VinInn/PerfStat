@@ -40,10 +40,25 @@ struct C : public A {
 
 };
 
+
+struct E : public A {
+  E(){}
+  E(int ii) : A(ii){}
+
+  virtual int ival() const override;
+  virtual int jval() const final;
+  virtual int kval() const override { return i;}
+};
+
+
 #ifndef WITHLIB 
 int A::val() const { return i;}
 int B::ival() const { return i;}
 int C::ival() const { return i;}
+
+int E::ival() const { return i;}
+int E::jval() const { return i;}
+
 
 void modify(A**){}
 void modify(C**){}
@@ -73,6 +88,7 @@ int main(int argc, char** argv) {
   PerfStat c21, c22, c23;
   PerfStat c31, c32, c33;
   PerfStat c41, c42, c43;
+  PerfStat c51, c52, c53;
   PerfStat if1;
   PerfStat mn, md, ss1, ss2;
 
@@ -81,6 +97,8 @@ int main(int argc, char** argv) {
   A * b[NN];
   C * c[NN];
   C  d[NN];
+  E  e[NN];
+
 
   PerfStat m1; m1.startAll();
   for (int i=0; i!=NN; i++) {
@@ -208,6 +226,21 @@ int main(int argc, char** argv) {
       s[k] += d[i].jval();
     c43.stop();
 
+
+    c51.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += e[i].kval();
+    c51.stop();
+    c52.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += e[i].ival();
+    c52.stop();
+    c53.start();
+    for (int i=0;i!=NN;++i)
+      s[k] += e[i].jval();
+    c53.stop();
+
+
     if1.start();
     for (int i=0;i!=NN;++i) {
       if (0==(a[i]->ival()&1)) b[i]->i = c[i]->ival(); else b[i]->i = d[i].jval();
@@ -238,6 +271,9 @@ int main(int argc, char** argv) {
   std::cout << "|d  val  "; c41.print(std::cout);
   std::cout << "|d ival  "; c42.print(std::cout);
   std::cout << "|d jval  "; c43.print(std::cout);
+  std::cout << "|e kval  "; c51.print(std::cout);
+  std::cout << "|e ival  "; c52.print(std::cout);
+  std::cout << "|e jval  "; c53.print(std::cout);
   std::cout << "|if      "; if1.print(std::cout);
 
   return err ? -1 : 0;
