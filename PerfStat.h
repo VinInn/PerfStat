@@ -75,10 +75,8 @@ private:
       //    PERF_COUNT_HW_BUS_CYCLES,
       PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
       PERF_COUNT_HW_BRANCH_MISSES,
-      // 0x0408,   // DTLB walk                                                       
-      //  0x0485  // ITLB walk
-      0x0280 // ICACHE.MISSES
-      // 0x02C2 // RETIRE_SLOTS
+      0xc488, // All indirect branches that are not calls nor returns.
+      // 0x0280 // ICACHE.MISSES
     }, {
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_HW_INSTRUCTIONS,
@@ -92,8 +90,10 @@ private:
       PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
-      0x0408,   // DTLB walk                                                       
-      0x0485,  // ITLB walk
+      0x180010e,     // stall disp
+      0x1a2,      //   res stall         
+      // 0x0408,   // DTLB walk                                                       
+      // 0x0485,  // ITLB walk
       // 0x0280 // ICACHE.MISSES
       0x02C2 // RETIRE_SLOTS
      }
@@ -159,6 +159,9 @@ public:
   
   double dtlbpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
   double itlbpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
+
+  double stallDpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
+  double stallRpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
   double rslotpc() const { return double(results[2][METRIC_OFFSET+6])/double(results[2][METRIC_OFFSET+0]);}
   
   
@@ -174,6 +177,10 @@ public:
   
   // L1 instruction-cache misses  (per cycles)
   double il1mpc() const { return double(results[0][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
+
+  // indirect calls  (per cycles)
+  double icallpc() const { return double(results[0][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
+
 
   // fraction of bus cycles
   // double buspc() const { return double(results0[METRIC_OFFSET+4])/double(results0[METRIC_OFFSET+0]);}
@@ -410,9 +417,12 @@ public:
 	<< sep << "cache-ref/cy"
 	<< sep << "mem-ref/cy"
 	<< sep <<  (isINTEL() ? "div/cy" : "bus/cy")
-	<< sep << "missed-L1I/cy"
-      	<< sep << "dtlb-walk/cy"
-      	<< sep << "itlb-walk/cy"
+      // << sep << "missed-L1I/cy"
+	<< sep << "ind-call/cy"
+      //<< sep << "dtlb-walk/cy"
+      //	<< sep << "itlb-walk/cy"
+     	<< sep << "disp-stall/cy"
+     	<< sep << "res-stall/cy"
       	<< sep << "rslot/cy"
       //	<< sep << "bus/cy"
       ;
@@ -434,9 +444,12 @@ public:
 	<< sep << percent*crpc()
 	<< sep << percent*mrpc()
 	<< sep << percent*divpc()
-	<< sep << percent*il1mpc()
-       	<< sep << percent*1000.*1000.*dtlbpc()
-       	<< sep << percent*1000.*1000.*itlbpc()
+      //	<< sep << percent*il1mpc()
+	<< sep << percent*icallpc()
+      // 	<< sep << percent*1000.*1000.*dtlbpc()
+      // 	<< sep << percent*1000.*1000.*itlbpc()
+	<< sep << percent*stallDpc()
+	<< sep << percent*stallRpc()
        	<< sep << rslotpc()
       // buspc()
       ;
