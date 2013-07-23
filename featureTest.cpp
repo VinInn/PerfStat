@@ -215,14 +215,16 @@ int main0() {
 
 int main1() {
 
-  constexpr int NN = 1024*1;
+  constexpr int NN = 1024*4;
   alignas(128) float rf[NN];
   alignas(128) double rd[NN];
+  alignas(128) float of[NN];
+  alignas(128) double od[NN];
 
   std::mt19937 eng;
   std::uniform_real_distribution<float> rgen(0.5,1.5);
   for (int i=0;i!=NN;++i)
-    rd[i]=rf[i]=rgen(eng);
+    od[i]=of[i]=rd[i]=rf[i]=rgen(eng);
 
 
 
@@ -238,11 +240,12 @@ int main1() {
     for (int k=0; k!=10000; ++k) {
       perf.start();    
       
-      for (int i=0; i!=NN; ++i) s+= std::log(rd[i]);
+      for (int i=0; i!=NN; ++i) od[i]+= std::log(rd[i]);
       
       perf.stop();
       
     } 
+    for (int i=0; i!=NN; ++i) s+=od[i];
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -259,11 +262,11 @@ int main1() {
     double s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= std::log2(rd[i]);
+      for (int i=0; i!=NN; ++i) od[i]+= std::log2(rd[i]);
       perf.stop();
       
     }
-    
+    for (int i=0; i!=NN; ++i) s+=od[i];
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -280,10 +283,11 @@ int main1() {
     float s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= polyHorner(rf[i]);
+      for (int i=0; i!=NN; ++i) of[i]+= polyHorner(rf[i]);
       perf.stop();
     }
-    ret &= s!=0;
+   for (int i=0; i!=NN; ++i) s+=of[i];
+   ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
 
@@ -293,13 +297,14 @@ int main1() {
 
   {
     PerfStat perf;
-    // will vectorize 256 only with avx2 (because of the int)
+    // 
     float s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= polyEstrin(rf[i]);
+      for (int i=0; i!=NN; ++i) of[i]+= polyEstrin(rf[i]);
       perf.stop();     
     }
+   for (int i=0; i!=NN; ++i) s+=of[i];   
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -312,13 +317,14 @@ int main1() {
 
   {
     PerfStat perf;
-    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    //
     double s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= polyHorner(rd[i]);
+      for (int i=0; i!=NN; ++i) od[i]+= polyHorner(rd[i]);
       perf.stop();                                                        
     }
+    for (int i=0; i!=NN; ++i) s+=od[i];
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -331,13 +337,14 @@ int main1() {
 
   {
     PerfStat perf;
-    // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+    // 
     double s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= polyEstrin(rd[i]);
+      for (int i=0; i!=NN; ++i) od[i]+= polyEstrin(rd[i]);
       perf.stop();      
     }
+    for (int i=0; i!=NN; ++i) s+=od[i];
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -350,13 +357,14 @@ int main1() {
 
   {
     PerfStat perf;
-    // will vectorize 256 only with avx2 (because of the int)
+    //
     float s =0;
     for (int k=0; k!=10000; ++k) {
       perf.start();
-      for (int i=0; i!=NN; ++i) s+= 1.f/rf[i];
+      for (int i=0; i!=NN; ++i) of[i]+= 1.f/rf[i];
       perf.stop();
     }
+   for (int i=0; i!=NN; ++i) s+=of[i];
     ret &= s!=0;
 
    //std::cout << " " << s << std::endl;
@@ -368,13 +376,14 @@ int main1() {
 
 {
   PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double          
+   //  
    double s =0;
-    for (int k=0; k!=10000; ++k) {
+   for (int k=0; k!=10000; ++k) {
      perf.start();
-     for (int i=0; i!=NN; ++i) s+= 1./rd[i];
+     for (int i=0; i!=NN; ++i) od[i]+= 1./rd[i];
      perf.stop();
-     }
+   }
+   for (int i=0; i!=NN; ++i) s+=od[i];
 
     ret &= s!=0;
 
@@ -388,13 +397,14 @@ int main1() {
 
 {
   PerfStat perf;
-   // double precision and int. it wil vectorize in mix 128 for int and 256 for double
+   // 
    double s =0;
    for (int k=0; k!=10000; ++k) {
      perf.start();
-     for (int i=0; i!=NN; ++i) s+= std::sqrt(rd[i]);
+     for (int i=0; i!=NN; ++i) od[i]+= std::sqrt(rd[i]);
      perf.stop();
    }
+   for (int i=0; i!=NN; ++i) s+=od[i];
    
    ret &= s!=0;
    

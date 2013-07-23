@@ -24,7 +24,8 @@ int main(int argc, char **) {
   auto ok = [=](double x, double y) { return std::abs((x-y)/y)<resolution;};
  
 
-  std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
+  std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine. Model ";
+  printf("%x",PerfStat::modelNumber()); std::cout<< std::endl; 
   std::cout << "|test   "; PerfStat::header(std::cout);
   std::cout << "|test   "; PerfStat::header(std::cout,true);
 

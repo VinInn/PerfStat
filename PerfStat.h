@@ -28,7 +28,7 @@ private:
 
   static constexpr int METRIC_COUNT=7;
   static constexpr int METRIC_OFFSET=3;
-  static constexpr int NGROUPS=3;
+  static constexpr int NGROUPS=4;
 
 
   Type types[NGROUPS][METRIC_COUNT] = {
@@ -59,6 +59,14 @@ private:
       PERF_TYPE_RAW,
       PERF_TYPE_RAW,
       PERF_TYPE_RAW
+    }, { 
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_HARDWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_SOFTWARE,
+      PERF_TYPE_RAW,
+      PERF_TYPE_RAW,
+      PERF_TYPE_RAW
     }
   };
 
@@ -75,8 +83,7 @@ private:
       //    PERF_COUNT_HW_BUS_CYCLES,
       PERF_COUNT_HW_BRANCH_INSTRUCTIONS,
       PERF_COUNT_HW_BRANCH_MISSES,
-      0xc488, // All indirect branches that are not calls nor returns.
-      // 0x0280 // ICACHE.MISSES
+      0xc488 // All indirect branches that are not calls nor returns.
     }, {
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_HW_INSTRUCTIONS,
@@ -90,13 +97,22 @@ private:
       PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
-      0x180010e,     // stall disp
-      0x1a2,      //   res stall         
+      0x180010e,     // stall issued (front-end stalls)
+      0x180ffa1,     // 0-ports (back-end stalls)
+      0x18063a1,     // 0-exec-ports (back-end stalls)
+      // 0x1a2,      //   res stall         
       // 0x0408,   // DTLB walk                                                       
       // 0x0485,  // ITLB walk
-      // 0x0280 // ICACHE.MISSES
-      0x02C2 // RETIRE_SLOTS
-     }
+      // 0x02C2 // RETIRE_SLOTS
+     }, {
+      PERF_COUNT_HW_CPU_CYCLES,
+      PERF_COUNT_HW_INSTRUCTIONS,
+      PERF_COUNT_SW_CPU_CLOCK,
+      PERF_COUNT_SW_TASK_CLOCK,
+      0x0280, // ICACHE.MISSES
+      0x0151, // L1D.REPLACEMENT
+      0x6000860     // off core outstanding > 6
+    }
   };
   
   int fds[NGROUPS]={-1,};
@@ -160,9 +176,11 @@ public:
   double dtlbpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
   double itlbpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
 
-  double stallDpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
-  double stallRpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
-  double rslotpc() const { return double(results[2][METRIC_OFFSET+6])/double(results[2][METRIC_OFFSET+0]);}
+  double stallFpc() const { return double(results[2][METRIC_OFFSET+4])/double(results[2][METRIC_OFFSET+0]);}
+  double stallBpc() const { return double(results[2][METRIC_OFFSET+5])/double(results[2][METRIC_OFFSET+0]);}
+  double stallEpc() const { return double(results[2][METRIC_OFFSET+6])/double(results[2][METRIC_OFFSET+0]);}
+
+  // double rslotpc() const { return double(results[2][METRIC_OFFSET+6])/double(results[2][METRIC_OFFSET+0]);}
   
   
   // cache references per cycle
@@ -176,7 +194,13 @@ public:
   
   
   // L1 instruction-cache misses  (per cycles)
-  double il1mpc() const { return double(results[0][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
+  double il1mpc() const { return double(results[3][METRIC_OFFSET+4])/double(results[0][METRIC_OFFSET+0]);}
+  // L1 data-cache misses  (per cycles)
+  double dl1mpc() const { return double(results[3][METRIC_OFFSET+5])/double(results[0][METRIC_OFFSET+0]);}
+  // offcore full
+  double offpc() const { return double(results[3][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
+
+
 
   // indirect calls  (per cycles)
   double icallpc() const { return double(results[0][METRIC_OFFSET+6])/double(results[0][METRIC_OFFSET+0]);}
@@ -229,6 +253,10 @@ public:
       types[1][4] = PERF_TYPE_HARDWARE;
     }
     
+    // non exe uops
+    confs[2][6] = isHaswell() ? 0x18063a1 : 0x18083a1;
+
+
     for (int k=0; k!=NGROUPS; k++) {
       for  (int i=1; i!=METRIC_COUNT; ++i) {
 	pe.config = confs[k][i]; pe.type = types[k][i];
@@ -416,14 +444,17 @@ public:
 	<< sep << "missed-br/cy"
 	<< sep << "cache-ref/cy"
 	<< sep << "mem-ref/cy"
+	<< sep << "missed-L1I/cy"
+	<< sep << "missed-L1D/cy"
+	<< sep << "offcore/cy"
 	<< sep <<  (isINTEL() ? "div/cy" : "bus/cy")
-      // << sep << "missed-L1I/cy"
 	<< sep << "ind-call/cy"
-      //<< sep << "dtlb-walk/cy"
-      //	<< sep << "itlb-walk/cy"
-     	<< sep << "disp-stall/cy"
-     	<< sep << "res-stall/cy"
-      	<< sep << "rslot/cy"
+      // << sep << "dtlb-walk/cy"
+      // << sep << "itlb-walk/cy"
+     	<< sep << "front-stall/cy"
+     	<< sep << "back-stall/cy"
+     	<< sep << "exec-stall/cy"
+      //	<< sep << "rslot/cy"
       //	<< sep << "bus/cy"
       ;
     if (details) {
@@ -443,14 +474,17 @@ public:
 	<< sep << percent*mbpc()
 	<< sep << percent*crpc()
 	<< sep << percent*mrpc()
+      	<< sep << percent*il1mpc()
+      	<< sep << percent*dl1mpc()
+      	<< sep << percent*offpc()
 	<< sep << percent*divpc()
-      //	<< sep << percent*il1mpc()
 	<< sep << percent*icallpc()
       // 	<< sep << percent*1000.*1000.*dtlbpc()
       // 	<< sep << percent*1000.*1000.*itlbpc()
-	<< sep << percent*stallDpc()
-	<< sep << percent*stallRpc()
-       	<< sep << rslotpc()
+	<< sep << percent*stallFpc()
+	<< sep << percent*stallBpc()
+	<< sep << percent*stallEpc()
+      // 	<< sep << rslotpc()
       // buspc()
       ;
     if (details) {
@@ -508,11 +542,22 @@ public:
     return __rdtscp(&taux);
   }
 
+  static bool isHaswell() {
+    return modelNumber()==0x3c; 
+  }
   
+  static unsigned int modelNumber() {
+    unsigned int eax;
+    cpuid(1, &eax, nullptr, nullptr, nullptr);
+    // return eax;
+   return ( (eax&0xf0) >> 4) + ( (eax&0xf0000) >> 12);
+  }
+
   static bool isINTEL() {
     char v[13] = { 0, };
     unsigned int cpuid_level=0;
     cpuid(0, &cpuid_level, (unsigned int *)&v[0], ( unsigned int *)&v[8], ( unsigned int *)&v[4]);
+
     return 0==::strcmp(v,"GenuineIntel");
   }
   
