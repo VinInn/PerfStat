@@ -111,7 +111,8 @@ private:
       PERF_COUNT_SW_TASK_CLOCK,
       0x0280, // ICACHE.MISSES
       0x0151, // L1D.REPLACEMENT
-      0x6000860     // off core outstanding > 6
+      0x1a2     //   res stall         
+      // 0x6000860     // off core outstanding > 6
     }
   };
   
