@@ -228,7 +228,8 @@ public:
   }
   
   void init() {
-    pid_t id = getpid();
+    // pid_t id = getpid();
+    pid_t id = 0;
     int cpuid=-1; int flags=0;	
     struct perf_event_attr pe;
     
@@ -237,6 +238,7 @@ public:
     pe.size = sizeof(struct perf_event_attr);
     pe.config = confs[0][0];
     pe.disabled = 1;
+    pe.inherit=0;
     pe.exclude_kernel = 1;
     pe.exclude_hv = 1;
     pe.read_format = PERF_FORMAT_GROUP|PERF_FORMAT_TOTAL_TIME_ENABLED|PERF_FORMAT_TOTAL_TIME_RUNNING;
@@ -438,8 +440,9 @@ public:
     const char * sepF = "|  *"; 
     const char * sep = "*|  *"; 
     const char * sepL = "*|"; 
-    out << sepF  << "time"    
-	<< sep << "cycles" 
+    out << sepF << "real time"
+        << sep << "task time"
+   	<< sep << "cycles" 
 	<< sep << "ipc"
 	<< sep << "br/ins"
 	<< sep << "missed-br/cy"
@@ -468,7 +471,8 @@ public:
   
   void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const {
     const char * sep = "|  "; 
-    out << sep << mult*taskTime() 
+    out << sep << mult*realTime() 
+        << sep << mult*taskTime()
 	<< sep << mult*cycles() 
 	<< sep << ipc()
 	<< sep << percent*brfrac()

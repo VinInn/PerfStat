@@ -1,7 +1,7 @@
 #include "PerfStat.h"
 #include<cmath>
 #include<iostream>
-#include<omp.h"
+#include<omp.h>
 
 template<typename T>
 // typedef float T;
@@ -14,7 +14,9 @@ inline T polyHorner(T y) {
 
 int main() {
 
-  std::cout << "number of threads " << OpenMP::GetMaxNumThreads() << std::endl;
+  bool ret=true;
+  
+  std::cout << "number of threads " <<  omp_get_num_threads() << " " << omp_get_max_threads() << std::endl;
 
 
 
@@ -36,12 +38,37 @@ int main() {
 
    //std::cout << " " << s << std::endl;
 
-   std::cout << "|Horner f  ";
+   std::cout << "|Parallel all  ";
    perf.print(std::cout,true);
-}
+ }
 
-  }	  
 
-  return ret;
+ {
+    PerfStat perf;
+    // will vectorize 256 only with avx2 (because of the int)
+    float s =0;
+    for (int k=0; k!=100; ++k) {
+      perf.start();
+#pragma omp parallel reduction (+ : s)
+      {
+       	float c = 1.f/1000000.f;
+        float v=0;
+        int N = 10000000;
+        int NT = N/omp_get_num_threads();  // ok I know there is nothing left
+        v += NT* omp_get_thread_num();
+        for (int i=0; i<NT; ++i) s+= polyHorner((++v)*c);
+      } // end omp parallel
+      perf.stop();
+    }
+    ret &= s!=0;
+
+   //std::cout << " " << s << std::endl;
+
+   std::cout << "|Parallel for  ";
+   perf.print(std::cout,true);
+ }
+
+
+  return ret ? 0 : 1;
 
 }
