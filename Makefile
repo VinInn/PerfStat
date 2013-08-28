@@ -1,10 +1,10 @@
-CXX = c++ ${ADDOPT} -std=gnu++11 -Wall -Wno-format  -Wstrict-overflow -Wunsafe-loop-optimizations -ftree-vectorizer-verbose=1 -ftree-loop-if-convert-stores -lrt -fPIC -fvisibility-inlines-hidden
+CXX = c++ ${ADDOPT} -std=gnu++11 -Wall -Wno-format  -Wstrict-overflow -Wunsafe-loop-optimizations -ftree-vectorizer-verbose=1 -ftree-loop-if-convert-stores -lrt -fPIC -fvisibility-inlines-hidden -fopenmp
 
 
 
-.PHONY : run all clean L3Mem UnitTest featureTest callTest libCall
+.PHONY : run all clean L3Mem UnitTest featureTest callTest libCall parallel 
 
-all : UnitTest L3Mem featureTest callTest libCall callTest_O3_wl
+all : UnitTest L3Mem featureTest callTest libCall callTest_O3_wl parallel 
 
 
 L3Mem : L3Mem_O2 L3Mem_O2_avx L3Mem_O2_avx2  L3Mem_O3 L3Mem_O3_avx L3Mem_O3_avx2 L3Mem_fast L3Mem_fast_avx L3Mem_fast_avx2
@@ -12,6 +12,8 @@ UnitTest : UnitTest_O3
 featureTest : featureTest_O2 featureTest_O2_avx featureTest_O2_avx2  featureTest_O3 featureTest_O3_avx featureTest_O3_avx2 featureTest_fast featureTest_fast_avx featureTest_fast_avx2
 callTest : callTest_O2 callTest_O2_avx callTest_O2_avx2  callTest_O3 callTest_O3_avx callTest_O3_avx2 callTest_fast callTest_fast_avx callTest_fast_avx2
 libCall : libCall_O3.so  libCall_O3_avx.so  libCall_O3_avx2.so
+parallel : parallel_O2 parallel_O2_avx parallel_O2_avx2  parallel_O3 parallel_O3_avx parallel_O3_avx2 parallel_fast parallel_fast_avx parallel_fast_avx2
+
 
 %_O2 : %.cpp
 	$(CXX) $(INCDIR) $< -o $@ -O2 -march=corei7
