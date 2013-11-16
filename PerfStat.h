@@ -460,6 +460,7 @@ public:
      	<< sep << "exec-stall/cy"
       //	<< sep << "rslot/cy"
       //	<< sep << "bus/cy"
+        << sep << "ncalls"
       ;
     if (details) {
       out << sep << "clock"
@@ -491,11 +492,12 @@ public:
 	<< sep << percent*stallEpc()
       // 	<< sep << rslotpc()
       // buspc()
+      << sep << calls()
       ;
     if (details) {
       out << sep << clock()
 	  << sep << turbo() << sep;
-      for (int k=0; k!=NGROUPS; k++) { out << percent/corr(k) <<",";}
+      for (int k=0; k!=NGROUPS; k++) { out << ncalls[k] <<'/'<<percent/corr(k) <<",";}
     }
     out << sep << std::endl;
   }
