@@ -95,12 +95,12 @@ class VinPerf final : public PerfStatBase<4>{
     }
   };
 
-
+public:
   using PerfStatBase<4>::PerfStatBase;
 
-  void get(Conf ** c, Type ** t) const {
-    memcpy(c,confs, NGROUPS*METRIC_COUNT*sizeof(Conf));
-    memcpy(t,types, NGROUPS*METRIC_COUNT*sizeof(Type));
+  void get(Conf * c, Type * t) const {
+    memcpy(c,&confs[0][0], NGROUPS*METRIC_COUNT*sizeof(Conf));
+    memcpy(t,&types[0][0], NGROUPS*METRIC_COUNT*sizeof(Type));
 
   };
 

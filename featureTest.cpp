@@ -31,7 +31,7 @@ int main0() {
     
     PerfStat perf;
     std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
-    PerfStat::header(std::cout,true);
+    perf.header(std::cout,true);
     
     double s =0;
     for (int k=0; k!=100; ++k) {
@@ -242,7 +242,7 @@ int main1() {
     
     PerfStat perf;
     std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
-    PerfStat::header(std::cout,true);
+    perf.header(std::cout,true);
     
     double s =0;
     for (int k=0; k!=100; ++k) {
@@ -456,7 +456,7 @@ int main2() {
     
     PerfStat perf;
     std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine" << std::endl; 
-    PerfStat::header(std::cout,true);
+    perf.header(std::cout,true);
     
     double s =0;
     for (int k=0; k!=10000; ++k) {

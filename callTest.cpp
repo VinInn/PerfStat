@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
   }
 
   if (err) std::cout << "a mess " << std::endl;
-  std::cout << "|kernel  "; PerfStat::header(std::cout,true);	
+  std::cout << "|kernel  "; perf.header(std::cout,true);	
   std::cout << "|new     "; mn.print(std::cout);
   std::cout << "|delete  "; md.print(std::cout);
   std::cout << "|string  "; ss1.print(std::cout);

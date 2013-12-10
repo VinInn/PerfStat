@@ -26,8 +26,8 @@ int main(int argc, char **) {
 
   std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine. Model ";
   printf("%x",PerfStat::modelNumber()); std::cout<< std::endl; 
-  std::cout << "|test   "; PerfStat::header(std::cout);
-  std::cout << "|test   "; PerfStat::header(std::cout,true);
+  std::cout << "|test   "; perf.header(std::cout);
+  std::cout << "|test   "; perf.header(std::cout,true);
 
   bool debug = argc>1;
 

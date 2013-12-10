@@ -99,13 +99,13 @@ public:
   }
 
  
-  virtual void get(Conf ** c, Type ** t) const=0;
+  virtual void get(Conf * c, Type * t) const=0;
   
   void init() {
 
     Conf confs[NGROUPS][METRIC_COUNT];
     Type types[NGROUPS][METRIC_COUNT];
-    get(confs,types);
+    get(&confs[0][0],&types[0][0]);
     
 
     // pid_t id = getpid();
@@ -159,7 +159,7 @@ public:
     warmup();
   }
   
-  ~PerfStat(){
+  virtual ~PerfStatBase(){
     // don't! messes up the whole thing
     // ::close(fds0);
     // ::close(fds1);
