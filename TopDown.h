@@ -35,7 +35,7 @@ public:
   static constexpr unsigned int CODE_IDQ_UOPS_NOT_DELIVERED__CORE = 0x53019C;
   static constexpr unsigned int CODE_IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE = 0x453019C;
   static constexpr unsigned int CODE_ILD_STALL__LCP = 0x530187;
-  static constexpr unsigned int CODE_INST_RETIRED__ANY = 0x530100;
+  static constexpr unsigned int CODE_INST_RETIRED__ANY = 0x5300C0;//  0x530100;
   static constexpr unsigned int CODE_INT_MISC__RECOVERY_CYCLES = 0x153030D;
   static constexpr unsigned int CODE_ITLB_MISSES__WALK_DURATION = 0x530485;
   static constexpr unsigned int CODE_L1D_PEND_MISS__PENDING = 0x530148;
@@ -103,6 +103,7 @@ public:
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+
       CODE_INST_RETIRED__ANY,
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
       CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
@@ -186,7 +187,7 @@ public:
 	     PipelineWidth *  INT_MISC__RECOVERY_CYCLES() ) / SLOTS(1);
   }
   double retiring() const {
-    return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(0);
+    return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(1);
   }
 
 

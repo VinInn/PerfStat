@@ -23,15 +23,16 @@ int main(int argc, char **) {
   double resolution = 0.01;
   auto ok = [=](double x, double y) { return std::abs((x-y)/y)<resolution;};
  
+  PerfStat ps; 
 
   std::cout << "we are " << (PerfStat::isINTEL() ? "on" : "not on") << " an INTEL Machine. Model ";
   printf("%x",PerfStat::modelNumber()); std::cout<< std::endl; 
-  std::cout << "|test   "; perf.header(std::cout);
-  std::cout << "|test   "; perf.header(std::cout,true);
+  std::cout << "|test   "; ps.header(std::cout);
+  std::cout << "|test   "; ps.header(std::cout,true);
 
   bool debug = argc>1;
 
-  PerfStat ps; 
+  
   test_verify(0==ps.calls());
   test_verify(0==ps.callsTot());
   test_verify(0==ps.read()); ps.calib();
