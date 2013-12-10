@@ -22,7 +22,7 @@
 
 template<int NG>
 class PerfStatBase {
-private:
+protected:
   static constexpr int METRIC_COUNT=7;
   static constexpr int METRIC_OFFSET=3;
   static constexpr int NGROUPS=NG;
