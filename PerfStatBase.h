@@ -130,14 +130,16 @@ public:
     }
     pe.disabled = 0;
     
+    /*
     // a small hack
     if (!isINTEL()) {
       confs[1][4] = PERF_COUNT_HW_BUS_CYCLES;
       types[1][4] = PERF_TYPE_HARDWARE;
     }
-    
+    */
+
     // non exe uops
-    confs[2][6] = isHaswell() ? 0x18063a1 : 0x18083a1;
+    //    confs[2][6] = isHaswell() ? 0x18063a1 : 0x18083a1;
 
 
     for (int k=0; k!=NGROUPS; k++) {

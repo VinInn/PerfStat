@@ -1,8 +1,11 @@
+#ifndef TopDown_H
+#define TopDonw_H
 
+#include "PerfStatBase.h"
 
 
 // Performance Monitoring Events for 3rd Generation Intel Core Processors Code Name IvyTown-IVT V7 8/16/2013 1:32:19 PM
-class TopDown {
+class TopDown  final : public PerfStatBase<4> {
 public:
 
 
@@ -55,9 +58,6 @@ public:
 
   static constexpr int PipelineWidth = 4;
 
- static constexpr int NGROUPS=4;
-
-
   Type types[NGROUPS][METRIC_COUNT] = {
     {
       PERF_TYPE_HARDWARE, // PERF_COUNT_HW_CPU_CYCLES
@@ -105,7 +105,7 @@ public:
       PERF_COUNT_SW_TASK_CLOCK,
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
       CODE_UOPS_RETIRED__RETIRE_SLOTS,
-      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
+      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE,
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
@@ -133,38 +133,111 @@ public:
     }
   };
 
-  double CYCLES() const { }
-  double SLOTS() const { return PipelineWidth*CYCLES();}
 
 
-  double frontendBound() const { return IDQ_UOPS_NOT_DELIVERED__CORE() / SLOTS();}
+  VinPerf (bool imultiplex=false) : PerfStatBase<4>(imultiplex){init();}
+  VinPerf(PerfStatBase::FD f) : PerfStatBase<4>(f){}
+
+  void get(Conf * c, Type * t) const {
+    memcpy(c,&confs[0][0], NGROUPS*METRIC_COUNT*sizeof(Conf));
+    memcpy(t,&types[0][0], NGROUPS*METRIC_COUNT*sizeof(Type));
+
+  };
+
+
+
+  double CYCLES(int n) const { double(results[n][METRIC_OFFSET+0]);}
+  double SLOTS(int n) const { return PipelineWidth*CYCLES(n);}
+
+  long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+3];}
+  long long UOPS_RETIRED__RETIRE_SLOTS,() const { return results[0][METRIC_OFFSET+4];}
+  long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+5];}
+
+  long long UOPS_ISSUED__ANY()  const { return results[1][METRIC_OFFSET+3];}
+  long long UOPS_RETIRED__RETIRE_SLOTS()  const { return results[1][METRIC_OFFSET+4];}
+  long long INT_MISC__RECOVERY_CYCLES()  const { return results[1][METRIC_OFFSET+5];}
+
+  long long UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() const { return results[2][METRIC_OFFSET+3];}
+  long long UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() const { return results[2][METRIC_OFFSET+4];}
+  long long RS_EVENTS__EMPTY_CYCLES() const { return results[2][METRIC_OFFSET+5];}
+
+  long long CYCLE_ACTIVITY__STALLS_LDM_PENDING() const { return results[3][METRIC_OFFSET+3];}
+  long long RESOURCE_STALLS__SB() const { return results[3][METRIC_OFFSET+4];}
+  long long ARITH__FPU_DIV_ACTIVE() const { return results[3][METRIC_OFFSET+5];}
+
+  double frontendBound() const { return IDQ_UOPS_NOT_DELIVERED__CORE() / SLOTS(0);}
   double backendBound() const { 1. - ( frontendBound() + badSpeculation() + retiring() ); 
   double badSpecutation() const { 
     return ( UOPS_ISSUED__ANY() - UOPS_RETIRED__RETIRE_SLOTS() + 
-	     PipelineWidth * INT_MISC__RECOVERY_CYCLES()) / SLOTS();
+	     PipelineWidth *  INT_MISC__RECOVERY_CYCLES()) / SLOTS(1);
   }
-  double retiring() {
-    return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS();
+  double retiring() const {
+    return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(0);
   }
 
 
   double backendBundAtEXE_stalls() const {
-    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
-      - UOPS_EXECUTED_CYCLES_GE_2_UOPS_EXEC() - RS_EVENTS__EMPTY_CYCLES();
+    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE()*(CYCLES(2)/CYCLE(0)) + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
+      - UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() - RS_EVENTS__EMPTY_CYCLES();
   }
 
 
   double memBoundFraction() const {
-    return (CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
-      / ( backendBoundAtEXE_stalls() + RESOURCE_STALLS__SB() );
+    return double(CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
+      / double( backendBoundAtEXE_stalls()*(CYCLES(3)/CYCLE(2)) + RESOURCE_STALLS__SB() );
 
 
     double coreBound() const {
-      return backendBundAtEXE_stalls()/CYCLES() - memBoundFraction();
+      return backendBundAtEXE_stalls()/CYCLES(2) - memBoundFraction();
     }
 
     double divideBound() const {
-      return ARITH__FPU_DIV_ACTIVE()/CYCLES();
+      return ARITH__FPU_DIV_ACTIVE()/CYCLES(3);
     }
 
+
+   virtual void header(std::ostream & out, bool details=false) {
+    const char * sepF = "|  *"; 
+    const char * sep = "*|  *"; 
+    const char * sepL = "*|"; 
+    out << sepF << "real time"
+        << sep << "task time"
+   	<< sep << "cycles" 
+
+
+	<< sep << "div/cy"
+
+        << sep << "ncalls"
+      ;
+    if (details) {
+      out << sep << "clock"
+	  << sep << "turbo"
+	  << sep << "multiplex";
+    }
+    out << sepL << std::endl;
+  }
+
+
+
+  void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const {
+    const char * sep = "|  "; 
+    out << sep << mult*realTime() 
+        << sep << mult*taskTime()
+	<< sep << mult*cycles()
+	<< sep << percent*frontendBound()
+	<< sep << percent* backendBound()
+	<< sep << percent*badSpeculation()
+	<< sep << percent*retiring()
+
+	<< sep << percent*divideBound()
+
+	<< sep << calls()
+      ;
+    if (details) {
+      out << sep << clock()
+	  << sep << turbo() << sep;
+      for (int k=0; k!=NGROUPS; k++) { out << ncalls[k] <<'/'<<percent/corr(k) <<",";}
+    }
+    out << sep << std::endl;
+  }
 };
