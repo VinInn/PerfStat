@@ -106,7 +106,8 @@ public:
 
       CODE_INST_RETIRED__ANY,
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
-      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
+      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE,
+      CODE+IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE 
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
@@ -203,8 +204,13 @@ public:
       / double( backendBoundAtEXE_stalls()*(CYCLES(3)/CYCLES(2)) + RESOURCE_STALLS__SB() );
   }
 
+  double memBound() const {
+    return  memBoundFraction()*backendBoundAtEXE();
+  }
+
+
     double coreBound() const {
-      return backendBoundAtEXE_stalls()/CYCLES(2) - memBoundFraction();
+      return backendBoundAtEXE_stalls()/CYCLES(2) - memBound();
     }
 
     double divideBound() const {
@@ -257,7 +263,7 @@ public:
 	<< sep << percent*retiring()
 
       	<< sep << percent*backendBoundAtEXE()
-	<< sep << percent*memBoundFraction()
+	<< sep << percent*memBound()
 	<< sep << percent*coreBound()
 
 	<< sep << percent*divideBound()
