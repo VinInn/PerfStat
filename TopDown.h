@@ -1,7 +1,7 @@
 
 
 
-
+// Performance Monitoring Events for 3rd Generation Intel Core Processors Code Name IvyTown-IVT V7 8/16/2013 1:32:19 PM
 struct TopDown {
 
   using Type= unsigned int;
@@ -124,7 +124,7 @@ struct TopDown {
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
       CODE_UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC,
-      CODE_UOPS_EXECUTED_CYCLES_GE_2_UOPS_EXEC,
+      CODE_UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC,
       CODE_RS_EVENTS__EMPTY_CYCLE
     },
     {
@@ -133,11 +133,14 @@ struct TopDown {
       PERF_COUNT_SW_TASK_CLOCK,
       CODE_CYCLE_ACTIVITY__STALLS_LDM_PENDING,
       CODE_RESOURCE_STALLS__SB,
+      CODE_ARITH__FPU_DIV_ACTIVE
     }
   };
 
   double CYCLES() const { }
   double SLOTS() const { return PipelineWidth*CYCLES();}
+
+
   double frontendBound() const { return IDQ_UOPS_NOT_DELIVERED__CORE() / SLOTS();}
   double backendBound() const { 1. - ( frontendBound() + badSpeculation() + retiring() ); 
   double badSpecutation() const { 
@@ -159,5 +162,13 @@ struct TopDown {
     return (CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
       / ( backendBoundAtEXE_stalls() + RESOURCE_STALLS__SB() );
 
+
+    double coreBound() const {
+      return backendBundAtEXE_stalls()/CYCLES() - memBoundFraction();
+    }
+
+    double divideBound() const {
+      return ARITH__FPU_DIV_ACTIVE()/CYCLES();
+    }
 
 };

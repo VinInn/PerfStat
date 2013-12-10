@@ -74,9 +74,9 @@ private:
   Conf confs[NGROUPS][METRIC_COUNT]= {
     {
       PERF_COUNT_HW_CPU_CYCLES,
-      PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+      PERF_COUNT_HW_INSTRUCTIONS,
       // 0xc488, // All indirect branches that are not calls nor returns.
       // 0xc888,   // All indirect return branches
       // 0xd088,  // All non-indirect calls executed.
@@ -86,17 +86,17 @@ private:
       0xc488 // All indirect branches that are not calls nor returns.
     }, {
       PERF_COUNT_HW_CPU_CYCLES,
-      PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+      PERF_COUNT_HW_INSTRUCTIONS,
       0x0114,   // ARITH.DIV_BUSY
       PERF_COUNT_HW_CACHE_REFERENCES,
       PERF_COUNT_HW_CACHE_MISSES
     }, {
       PERF_COUNT_HW_CPU_CYCLES,
-      PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+      PERF_COUNT_HW_INSTRUCTIONS,
       0x180010e,     // stall issued (front-end stalls)
       0x180ffa1,     // 0-ports (back-end stalls)
       0x18063a1,     // 0-exec-ports (back-end stalls)
@@ -106,9 +106,9 @@ private:
       // 0x02C2 // RETIRE_SLOTS
      }, {
       PERF_COUNT_HW_CPU_CYCLES,
-      PERF_COUNT_HW_INSTRUCTIONS,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+      PERF_COUNT_HW_INSTRUCTIONS,
       0x0280, // ICACHE.MISSES
       0x0151, // L1D.REPLACEMENT
       0x1a2     //   res stall         
@@ -149,16 +149,16 @@ public:
   
   long long sum(int k) const { long long s=0; for (int i=0; i!=NGROUPS; i++) s+=results[i][k]; return s;}
   long long cyclesRaw() const { return sum(METRIC_OFFSET+0);}
-  long long instructionsRaw() const { return sum(METRIC_OFFSET+1);}
-  long long taskTimeRaw() const { return sum(METRIC_OFFSET+3);}
+  long long instructionsRaw() const { return sum(METRIC_OFFSET+3);}
+  long long taskTimeRaw() const { return sum(METRIC_OFFSET+2);}
   long long realTimeRaw() const { return results[0][METRIC_OFFSET+METRIC_COUNT+1];}
   long long nomCyclesRaw() const { return results[0][METRIC_OFFSET+METRIC_COUNT+0];}
   
   
   double corrsum(int k) const { double s=0; for (int i=0; i!=NGROUPS; i++) s+=corr(i)*results[i][k]; return s;}
   double cyclesTot() const { return corrsum(METRIC_OFFSET+0);}
-  double instructionsTot() const { return corrsum(METRIC_OFFSET+1);}
-  double taskTimeTot() const { return corrsum(METRIC_OFFSET+3);}
+  double instructionsTot() const { return corrsum(METRIC_OFFSET+3);}
+  double taskTimeTot() const { return corrsum(METRIC_OFFSET+2);}
   
   
   double cycles() const { return (0==calls()) ? 0 : cyclesTot()/double(calls()); }
@@ -170,7 +170,7 @@ public:
   double ipc() const { return double(instructionsRaw())/double(cyclesRaw());}
   
   // fraction of branch instactions
-  double brfrac() const { return double(results[0][METRIC_OFFSET+4])/double(results[0][METRIC_OFFSET+1]);}
+  double brfrac() const { return double(results[0][METRIC_OFFSET+4])/double(results[0][METRIC_OFFSET+3]);}
   // missed branches per cycle
   double mbpc() const { return double(results[0][METRIC_OFFSET+5])/double(results[0][METRIC_OFFSET+0]);}
   
@@ -509,14 +509,14 @@ public:
     if (!debug) return;
 
     out << double(results[0][METRIC_OFFSET+METRIC_COUNT])/double(results[0][METRIC_OFFSET+METRIC_COUNT+1]) 
-	<< " "<<  double(results[0][METRIC_OFFSET+0])/double(results[1][METRIC_OFFSET+1]) 
+	<< " "<<  double(results[0][METRIC_OFFSET+0])/double(results[0][METRIC_OFFSET+3]) 
 	<< " "<<  double(cyclesRaw())/double(results[0][METRIC_OFFSET+METRIC_COUNT])
 	<< " "<<  double(taskTimeRaw())/double(results[0][METRIC_OFFSET+METRIC_COUNT+1]) << std::endl;
     for (int k=0; k!=NGROUPS; k++) {
       out << ncalls[k] << " ";
       for (int i=0; i!=METRIC_COUNT+METRIC_OFFSET+2; ++i)  out << results[k][i] << " ";
-      out << "; " <<  double(results[k][METRIC_OFFSET+0])/double(results[k][METRIC_OFFSET+3]) 
-	  << " " << double(results[k][METRIC_OFFSET+1])/double(results[k][METRIC_OFFSET+0])
+      out << "; " <<  double(results[k][METRIC_OFFSET+0])/double(results[k][METRIC_OFFSET+2]) 
+	  << " " << double(results[k][METRIC_OFFSET+3])/double(results[k][METRIC_OFFSET+0])
 	  << " " << double(results[k][2])/double(results[k][1]);
       out  << std::endl;
     }
