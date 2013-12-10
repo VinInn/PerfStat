@@ -81,7 +81,7 @@ public:
   
 
 
-  PerfStatBase(bool imultiplex=false) : multiplex(imultiplex){ init();}
+  PerfStatBase(bool imultiplex=false) : multiplex(imultiplex){}
   
   // share file descriptors...
   
