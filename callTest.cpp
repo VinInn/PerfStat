@@ -253,6 +253,7 @@ int main(int argc, char** argv) {
 
   }
 
+ PerfStat perf;
   if (err) std::cout << "a mess " << std::endl;
   std::cout << "|kernel  "; perf.header(std::cout,true);	
   std::cout << "|new     "; mn.print(std::cout);
