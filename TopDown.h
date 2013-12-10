@@ -103,9 +103,8 @@ public:
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
-  
+      CODE_INST_RETIRED__ANY,
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
-      CODE_UOPS_RETIRED__RETIRE_SLOTS,
       CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
     },
     {
@@ -153,8 +152,19 @@ public:
   double CYCLES(int n) const { return double(results[n][METRIC_OFFSET+0]);}
   double SLOTS(int n) const { return PipelineWidth*CYCLES(n);}
 
-  long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+3];}
-//  long long UOPS_RETIRED__RETIRE_SLOTS() const { return results[0][METRIC_OFFSET+4];}
+  long long INST_RETIRED__ANY() const { return results[0][METRIC_OFFSET+3];}
+
+  // backward compatible interface....
+  long long instructionsRaw() const { return INST_RETIRED__ANY();}
+  double instructionsTot() const { return double(INST_RETIRED__ANY())*(CYCLES(0)+CYCLES(1)+CYCLES(2)+CYCLES(3))/CYCLES(0);}
+  double instructions() const { return (0==calls()) ? 0 : instructionsTot()/double(calls()); }
+
+
+   // instructions per cycle
+  double ipc() const { return double(INST_RETIRED__ANY())/CYCLES(0);}
+
+
+  long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+4];}
   long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+5];}
 
   long long UOPS_ISSUED__ANY()  const { return results[1][METRIC_OFFSET+3];}
@@ -185,6 +195,7 @@ public:
       - UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() - RS_EVENTS__EMPTY_CYCLES();
   }
 
+  double backendBoundAtEXE() const { return backendBoundAtEXE_stalls()/CYCLES(2);} 
 
   double memBoundFraction() const {
     return double( CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
@@ -207,7 +218,16 @@ public:
     out << sepF << "real time"
         << sep << "task time"
    	<< sep << "cycles" 
+	<< sep << "ipc"
 
+   	<< sep << "frontend" 
+   	<< sep << "backend" 
+   	<< sep << "bad spec" 
+   	<< sep << "retiring" 
+
+   	<< sep << "exe" 
+   	<< sep << "mem" 
+   	<< sep << "core" 
 
 	<< sep << "div/cy"
 
@@ -228,10 +248,16 @@ public:
     out << sep << mult*realTime() 
         << sep << mult*taskTime()
 	<< sep << mult*cycles()
+	<< sep << ipc()
+
 	<< sep << percent*frontendBound()
-	<< sep << percent* backendBound()
+	<< sep << percent*backendBound()
 	<< sep << percent*badSpeculation()
 	<< sep << percent*retiring()
+
+      	<< sep << percent*backendBoundAtEXE()
+	<< sep << percent*memBoundFraction()
+	<< sep << percent*coreBound()
 
 	<< sep << percent*divideBound()
 

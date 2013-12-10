@@ -17,8 +17,8 @@ int main(int argc, char**) {
 
 
   std::cout << sizeof(r) << " " << alignof(r) << std::endl;
-  perf.header(std::cout,true);	
   PerfStat c12, c2, c11, c22;
+  c12.header(std::cout,true);	
 
 
  std::cout << std::endl;
