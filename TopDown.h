@@ -2,10 +2,8 @@
 
 
 // Performance Monitoring Events for 3rd Generation Intel Core Processors Code Name IvyTown-IVT V7 8/16/2013 1:32:19 PM
-struct TopDown {
-
-  using Type= unsigned int;
-  using Conf= unsigned long long;
+class TopDown {
+public:
 
 
   static constexpr unsigned int CODE_ARITH__FPU_DIV_ACTIVE = 0x530114;
@@ -57,9 +55,7 @@ struct TopDown {
 
   static constexpr int PipelineWidth = 4;
 
-  static constexpr int METRIC_COUNT=7;
-  static constexpr int METRIC_OFFSET=3;
-  static constexpr int NGROUPS=4;
+ static constexpr int NGROUPS=4;
 
 
   Type types[NGROUPS][METRIC_COUNT] = {
