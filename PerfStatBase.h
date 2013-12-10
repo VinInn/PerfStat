@@ -23,6 +23,10 @@
 template<int NG>
 class PerfStatBase {
 protected:
+
+  using Type = unsigned int;
+  using Conf = unsigned long long;
+
   static constexpr int METRIC_COUNT=7;
   static constexpr int METRIC_OFFSET=3;
   static constexpr int NGROUPS=NG;
