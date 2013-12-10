@@ -103,14 +103,16 @@ public:
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+  
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
       CODE_UOPS_RETIRED__RETIRE_SLOTS,
-      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE,
+      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+
       CODE_UOPS_ISSUED__ANY,
       CODE_UOPS_RETIRED__RETIRE_SLOTS,
       CODE_INT_MISC__RECOVERY_CYCLES
@@ -119,14 +121,16 @@ public:
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+
       CODE_UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC,
       CODE_UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC,
-      CODE_RS_EVENTS__EMPTY_CYCLE
+      CODE_RS_EVENTS__EMPTY_CYCLES
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
+
       CODE_CYCLE_ACTIVITY__STALLS_LDM_PENDING,
       CODE_RESOURCE_STALLS__SB,
       CODE_ARITH__FPU_DIV_ACTIVE
@@ -146,11 +150,11 @@ public:
 
 
 
-  double CYCLES(int n) const { double(results[n][METRIC_OFFSET+0]);}
+  double CYCLES(int n) const { return double(results[n][METRIC_OFFSET+0]);}
   double SLOTS(int n) const { return PipelineWidth*CYCLES(n);}
 
   long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+3];}
-  long long UOPS_RETIRED__RETIRE_SLOTS,() const { return results[0][METRIC_OFFSET+4];}
+//  long long UOPS_RETIRED__RETIRE_SLOTS() const { return results[0][METRIC_OFFSET+4];}
   long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+5];}
 
   long long UOPS_ISSUED__ANY()  const { return results[1][METRIC_OFFSET+3];}
@@ -166,29 +170,29 @@ public:
   long long ARITH__FPU_DIV_ACTIVE() const { return results[3][METRIC_OFFSET+5];}
 
   double frontendBound() const { return IDQ_UOPS_NOT_DELIVERED__CORE() / SLOTS(0);}
-  double backendBound() const { 1. - ( frontendBound() + badSpeculation() + retiring() ); 
-  double badSpecutation() const { 
+  double backendBound() const { return 1. - ( frontendBound() + badSpeculation() + retiring() ); } 
+  double badSpeculation() const { 
     return ( UOPS_ISSUED__ANY() - UOPS_RETIRED__RETIRE_SLOTS() + 
-	     PipelineWidth *  INT_MISC__RECOVERY_CYCLES()) / SLOTS(1);
+	     PipelineWidth *  INT_MISC__RECOVERY_CYCLES() ) / SLOTS(1);
   }
   double retiring() const {
     return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(0);
   }
 
 
-  double backendBundAtEXE_stalls() const {
-    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE()*(CYCLES(2)/CYCLE(0)) + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
+  double backendBoundAtEXE_stalls() const {
+    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE()*(CYCLES(2)/CYCLES(0)) + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
       - UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() - RS_EVENTS__EMPTY_CYCLES();
   }
 
 
   double memBoundFraction() const {
-    return double(CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
-      / double( backendBoundAtEXE_stalls()*(CYCLES(3)/CYCLE(2)) + RESOURCE_STALLS__SB() );
-
+    return double( CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
+      / double( backendBoundAtEXE_stalls()*(CYCLES(3)/CYCLES(2)) + RESOURCE_STALLS__SB() );
+  }
 
     double coreBound() const {
-      return backendBundAtEXE_stalls()/CYCLES(2) - memBoundFraction();
+      return backendBoundAtEXE_stalls()/CYCLES(2) - memBoundFraction();
     }
 
     double divideBound() const {
@@ -196,7 +200,7 @@ public:
     }
 
 
-   virtual void header(std::ostream & out, bool details=false) {
+  void header(std::ostream & out, bool details=false) const {
     const char * sepF = "|  *"; 
     const char * sep = "*|  *"; 
     const char * sepL = "*|"; 
@@ -241,3 +245,7 @@ public:
     out << sep << std::endl;
   }
 };
+
+
+
+#endif

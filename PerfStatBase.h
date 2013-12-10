@@ -317,8 +317,8 @@ public:
   }
 
 
-  virtual void header(std::ostream & out, bool details=false) =0;
-  virtual  void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const =0;
+  virtual void header(std::ostream & out, bool details=false) const =0;
+  virtual void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const =0;
 
 
  

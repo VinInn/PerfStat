@@ -153,7 +153,8 @@ public:
 
   // fraction of bus cycles
   // double buspc() const { return double(results0[METRIC_OFFSET+4])/double(results0[METRIC_OFFSET+0]);}
-   virtual void header(std::ostream & out, bool details=false) {
+
+  void header(std::ostream & out, bool details=false) const {
     const char * sepF = "|  *"; 
     const char * sep = "*|  *"; 
     const char * sepL = "*|"; 
