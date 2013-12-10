@@ -135,8 +135,8 @@ public:
 
 
 
-  VinPerf (bool imultiplex=false) : PerfStatBase<4>(imultiplex){init();}
-  VinPerf(PerfStatBase::FD f) : PerfStatBase<4>(f){}
+  TopDown(bool imultiplex=false) : PerfStatBase<4>(imultiplex){init();}
+  TopDown(PerfStatBase::FD f) : PerfStatBase<4>(f){}
 
   void get(Conf * c, Type * t) const {
     memcpy(c,&confs[0][0], NGROUPS*METRIC_COUNT*sizeof(Conf));
