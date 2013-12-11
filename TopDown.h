@@ -57,6 +57,7 @@ public:
   static constexpr unsigned int CODE_UOPS_RETIRED__RETIRE_SLOTS = 0x5302C2;
 
   static constexpr int PipelineWidth = 4;
+  static constexpr int MEM_L3_WEIGHT = 7;
 
   Type types[NGROUPS][METRIC_COUNT] = {
     {
@@ -106,9 +107,9 @@ public:
 
       CODE_INST_RETIRED__ANY,
       CODE_IDQ_UOPS_NOT_DELIVERED__CORE,
-      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE,
-      CODE_IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE 
-    },
+      CODE_CYCLE_ACTIVITY__STALLS_LDM_PENDING,
+      CODE_RESOURCE_STALLS__SB
+     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
       PERF_COUNT_SW_CPU_CLOCK,
@@ -116,7 +117,9 @@ public:
 
       CODE_UOPS_ISSUED__ANY,
       CODE_UOPS_RETIRED__RETIRE_SLOTS,
-      CODE_INT_MISC__RECOVERY_CYCLES
+      CODE_INT_MISC__RECOVERY_CYCLES,,
+      CODE_ARITH__FPU_DIV_ACTIVE
+
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
@@ -133,9 +136,10 @@ public:
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
 
-      CODE_CYCLE_ACTIVITY__STALLS_LDM_PENDING,
-      CODE_RESOURCE_STALLS__SB,
-      CODE_ARITH__FPU_DIV_ACTIVE
+      CODE_MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS,
+      CODE_MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS, 
+      CODE_CYCLE_ACTIVITY__STALLS_L2_PENDING,     
+      CODE_IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE
     }
   };
 
@@ -166,23 +170,33 @@ public:
    // instructions per cycle
   double ipc() const { return double(INST_RETIRED__ANY())/CYCLES(0);}
 
+  // raw
 
   long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+4];}
-  long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+5];}
-  long long IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE() const  { return results[0][METRIC_OFFSET+6];}
+  long long CYCLE_ACTIVITY__STALLS_LDM_PENDING() const { return results[0][METRIC_OFFSET+5];}
+  long long RESOURCE_STALLS__SB() const { return results[0][METRIC_OFFSET+6];}
+
 
   long long UOPS_ISSUED__ANY()  const { return results[1][METRIC_OFFSET+3];}
   long long UOPS_RETIRED__RETIRE_SLOTS()  const { return results[1][METRIC_OFFSET+4];}
   long long INT_MISC__RECOVERY_CYCLES()  const { return results[1][METRIC_OFFSET+5];}
+  long long ARITH__FPU_DIV_ACTIVE() const { return results[1][METRIC_OFFSET+6];}
 
   long long UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() const { return results[2][METRIC_OFFSET+3];}
   long long UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() const { return results[2][METRIC_OFFSET+4];}
   long long RS_EVENTS__EMPTY_CYCLES() const { return results[2][METRIC_OFFSET+5];}
+  long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+6];}
 
-  long long CYCLE_ACTIVITY__STALLS_LDM_PENDING() const { return results[3][METRIC_OFFSET+3];}
-  long long RESOURCE_STALLS__SB() const { return results[3][METRIC_OFFSET+4];}
-  long long ARITH__FPU_DIV_ACTIVE() const { return results[3][METRIC_OFFSET+5];}
 
+
+  long long MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS()  const { return results[3][METRIC_OFFSET+3];}
+  long long MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS()  const { return results[3][METRIC_OFFSET+4];}
+  long long CYCLE_ACTIVITY__STALLS_L2_PENDING()  const { return results[3][METRIC_OFFSET+5];}
+  long long IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE() const  { return results[3][METRIC_OFFSET+6];}
+
+
+
+  // level 1
   double frontendBound() const { return IDQ_UOPS_NOT_DELIVERED__CORE() / SLOTS(0);}
   double backendBound() const { return 1. - ( frontendBound() + badSpeculation() + retiring() ); } 
   double badSpeculation() const { 
@@ -193,13 +207,14 @@ public:
     return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(1);
   }
 
+  // level2
 
   double frontLatency() const { 
-    return IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE()/SLOTS(0);
+    return IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE()/SLOTS(3);
   }
 
   double backendBoundAtEXE_stalls() const {
-    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE()*(CYCLES(2)/CYCLES(0)) + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
+    return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
       - UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() - RS_EVENTS__EMPTY_CYCLES();
   }
 
@@ -213,17 +228,29 @@ public:
   double memBound() const {
     return  memBoundFraction()*backendBoundAtEXE();
   }
+  
+  
+  double coreBound() const {
+    return backendBoundAtEXE - memBound();
+  }
 
 
-    double coreBound() const {
-      return backendBoundAtEXE_stalls()/CYCLES(2) - memBound();
-    }
-
-    double divideBound() const {
-      return ARITH__FPU_DIV_ACTIVE()/CYCLES(3);
-    }
-
-
+  // level3
+  
+  double memL3HitFraction() const { return 
+      double(  MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS()) / 
+      double ( MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS() + MEM_L3_WEIGHT * MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS());
+  } 
+  
+  double memL3Bound() const { return memL3HitFraction() * CYCLE_ACTIVITY__STALLS_L2_PENDING() / CYCLES(3);}
+  double dramBound() const { return (1.-memL3HitFraction()) * CYCLE_ACTIVITY__STALLS_L2_PENDING() / CYCLES(3);}
+  
+  
+  double divideBound() const {
+    return ARITH__FPU_DIV_ACTIVE()/CYCLES(1);
+  }
+  
+  
   void header(std::ostream & out, bool details=false) const {
     const char * sepF = "|  *"; 
     const char * sep = "*|  *"; 
@@ -232,20 +259,23 @@ public:
         << sep << "task time"
    	<< sep << "cycles" 
 	<< sep << "ipc"
-
+      
    	<< sep << "frontend" 
    	<< sep << "backend" 
    	<< sep << "bad spec" 
    	<< sep << "retiring" 
-
+      
   	<< sep << "front lat" 
-  
+      
   	<< sep << "exe" 
    	<< sep << "mem" 
    	<< sep << "core" 
-
+      
+	<< sep << "l3/cy"
+	<< sep << "dram/cy"
+      
 	<< sep << "div/cy"
-
+      
         << sep << "ncalls"
       ;
     if (details) {
@@ -255,29 +285,32 @@ public:
     }
     out << sepL << std::endl;
   }
-
-
-
+  
+  
+  
   void summary(std::ostream & out, bool details=false, double mult=1.e-6, double percent=100.) const {
     const char * sep = "|  "; 
     out << sep << mult*realTime() 
         << sep << mult*taskTime()
 	<< sep << mult*cycles()
 	<< sep << ipc()
-
+      
 	<< sep << percent*frontendBound()
 	<< sep << percent*backendBound()
 	<< sep << percent*badSpeculation()
 	<< sep << percent*retiring()
-
+      
 	<< sep << percent*frontLatency()
-
+      
       	<< sep << percent*backendBoundAtEXE()
 	<< sep << percent*memBound()
 	<< sep << percent*coreBound()
-
+      
+	<< sep << percent*memL3Bound()
+	<< sep << percent*dramL3Bound()
+      
 	<< sep << percent*divideBound()
-
+      
 	<< sep << calls()
       ;
     if (details) {
