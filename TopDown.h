@@ -117,7 +117,7 @@ public:
 
       CODE_UOPS_ISSUED__ANY,
       CODE_UOPS_RETIRED__RETIRE_SLOTS,
-      CODE_INT_MISC__RECOVERY_CYCLES,,
+      CODE_INT_MISC__RECOVERY_CYCLES,
       CODE_ARITH__FPU_DIV_ACTIVE
 
     },
@@ -231,7 +231,7 @@ public:
   
   
   double coreBound() const {
-    return backendBoundAtEXE - memBound();
+    return backendBoundAtEXE() - memBound();
   }
 
 
@@ -307,7 +307,7 @@ public:
 	<< sep << percent*coreBound()
       
 	<< sep << percent*memL3Bound()
-	<< sep << percent*dramL3Bound()
+	<< sep << percent*dramBound()
       
 	<< sep << percent*divideBound()
       
