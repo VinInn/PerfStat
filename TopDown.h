@@ -125,7 +125,8 @@ public:
 
       CODE_UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC,
       CODE_UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC,
-      CODE_RS_EVENTS__EMPTY_CYCLES
+      CODE_RS_EVENTS__EMPTY_CYCLES,
+      CODE_CYCLE_ACTIVITY__CYCLES_NO_EXECUTE
     },
     {
       PERF_COUNT_HW_CPU_CYCLES,
@@ -168,6 +169,7 @@ public:
 
   long long IDQ_UOPS_NOT_DELIVERED__CORE() const { return results[0][METRIC_OFFSET+4];}
   long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+5];}
+  long long IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE() const  { return results[0][METRIC_OFFSET+6];}
 
   long long UOPS_ISSUED__ANY()  const { return results[1][METRIC_OFFSET+3];}
   long long UOPS_RETIRED__RETIRE_SLOTS()  const { return results[1][METRIC_OFFSET+4];}
@@ -191,6 +193,10 @@ public:
     return UOPS_RETIRED__RETIRE_SLOTS() / SLOTS(1);
   }
 
+
+  double frontLatency() const { 
+    return IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE()/SLOTS(0);
+  }
 
   double backendBoundAtEXE_stalls() const {
     return CYCLE_ACTIVITY__CYCLES_NO_EXECUTE()*(CYCLES(2)/CYCLES(0)) + UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() 
@@ -232,7 +238,9 @@ public:
    	<< sep << "bad spec" 
    	<< sep << "retiring" 
 
-   	<< sep << "exe" 
+  	<< sep << "front lat" 
+  
+  	<< sep << "exe" 
    	<< sep << "mem" 
    	<< sep << "core" 
 
@@ -261,6 +269,8 @@ public:
 	<< sep << percent*backendBound()
 	<< sep << percent*badSpeculation()
 	<< sep << percent*retiring()
+
+	<< sep << percent*frontLatency()
 
       	<< sep << percent*backendBoundAtEXE()
 	<< sep << percent*memBound()
