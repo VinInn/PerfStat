@@ -136,8 +136,8 @@ public:
       PERF_COUNT_SW_CPU_CLOCK,
       PERF_COUNT_SW_TASK_CLOCK,
 
-      CODE_MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS,
-      CODE_MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS, 
+      CODE_MEM_LOAD_UOPS_RETIRED__LLC_HIT,
+      CODE_MEM_LOAD_UOPS_RETIRED__LLC_MISS, 
       CODE_CYCLE_ACTIVITY__STALLS_L2_PENDING,     
       CODE_IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE
     }
@@ -189,8 +189,8 @@ public:
 
 
 
-  long long MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS()  const { return results[3][METRIC_OFFSET+3];}
-  long long MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS()  const { return results[3][METRIC_OFFSET+4];}
+  long long MEM_LOAD_UOPS_RETIRED__LLC_HIT()  const { return results[3][METRIC_OFFSET+3];}
+  long long MEM_LOAD_UOPS_RETIRED__LLC_MISS()  const { return results[3][METRIC_OFFSET+4];}
   long long CYCLE_ACTIVITY__STALLS_L2_PENDING()  const { return results[3][METRIC_OFFSET+5];}
   long long IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE() const  { return results[3][METRIC_OFFSET+6];}
 
@@ -238,8 +238,8 @@ public:
   // level3
   
   double memL3HitFraction() const { return 
-      double(  MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS()) / 
-      double ( MEM_LOAD_UOPS_RETIRED__LLC_HIT_PS() + MEM_L3_WEIGHT * MEM_LOAD_UOPS_RETIRED__LLC_MISS_PS());
+      double(  MEM_LOAD_UOPS_RETIRED__LLC_HIT()) / 
+      double ( MEM_LOAD_UOPS_RETIRED__LLC_HIT() + MEM_L3_WEIGHT * MEM_LOAD_UOPS_RETIRED__LLC_MISS());
   } 
   
   double memL3Bound() const { return memL3HitFraction() * CYCLE_ACTIVITY__STALLS_L2_PENDING() / CYCLES(3);}
