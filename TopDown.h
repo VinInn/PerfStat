@@ -210,7 +210,7 @@ public:
   // level2
 
   double frontLatency() const { 
-    return IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE()/SLOTS(3);
+    return IDQ_UOPS_NOT_DELIVERED__CYCLES_0_UOPS_DELIV__CORE()/CYCLES(3);
   }
 
   double backendBoundAtEXE_stalls() const {
