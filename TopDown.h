@@ -185,7 +185,7 @@ public:
   long long UOPS_EXECUTED__CYCLES_GE_1_UOP_EXEC() const { return results[2][METRIC_OFFSET+3];}
   long long UOPS_EXECUTED__CYCLES_GE_2_UOPS_EXEC() const { return results[2][METRIC_OFFSET+4];}
   long long RS_EVENTS__EMPTY_CYCLES() const { return results[2][METRIC_OFFSET+5];}
-  long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[0][METRIC_OFFSET+6];}
+  long long CYCLE_ACTIVITY__CYCLES_NO_EXECUTE() const { return results[2][METRIC_OFFSET+6];}
 
 
 
@@ -222,7 +222,7 @@ public:
 
   double memBoundFraction() const {
     return double( CYCLE_ACTIVITY__STALLS_LDM_PENDING() + RESOURCE_STALLS__SB() ) 
-      / double( backendBoundAtEXE_stalls()*(CYCLES(3)/CYCLES(2)) + RESOURCE_STALLS__SB() );
+      / double( backendBoundAtEXE_stalls()*(CYCLES(0)/CYCLES(2)) + RESOURCE_STALLS__SB() );
   }
 
   double memBound() const {
